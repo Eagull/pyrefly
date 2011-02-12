@@ -22,8 +22,8 @@ class XMPPConnection:
 	connected = False
 	mucs = {}
 
-	validHandlerTypes = {'message', 'presence'}
-
+	validHandlerTypes = ['message', 'presence']
+	
 	def __init__(self, jid, password):
 		jid = xmpp.JID(jid)
 		self.user = jid.getNode()
@@ -43,12 +43,19 @@ class XMPPConnection:
 			print "Error authenticating user: " + self.user
 			return
 
-		self.client.RegisterHandler('message', self.messageHandler)
-		self.client.RegisterHandler('presence', self.presenceHandler);
+		#Should point elsewhere.
+		#self.client.RegisterHandler('message', self.messageHandler)
+		#self.client.RegisterHandler('presence', self.presenceHandler);
 
 		self.client.sendInitPresence()
 
 		self.connected = True
+
+  
+	
+		
+
+
 
 	def disconnect(self):
 		self.client.disconnect()
@@ -84,3 +91,7 @@ class XMPPConnection:
 			self.client.RegisterHandler(type, handler)
 		else:
 			raise ValueError()
+
+		
+
+
