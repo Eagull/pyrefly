@@ -16,7 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import xmppClient
+from xmppClient import xmppClient
+from handlers import commandHandler
 
 # TODO: parse config files
 # TODO: initialize bot
@@ -25,14 +26,14 @@ import xmppClient
 # TODO: add SIGINT and exit handlers
 # TODO: loop forever
 
-class Bot:
-	client = xmppClient.XMPPConnection("nickel@speeqe.com", "blammo11")
-bot = Bot()
 
-bot.client.joinMUC("nick", "pass")
+client = xmppClient("jid@example.com/bot", "password")
+client.registerHandler('message', commandHandler.messageHandler)
+#client.registerHandler('presence', commandHandler.presenceHandler)
+#client.registerHandler('message', floodHandler.messageHandler)
+#client.registerHandler('presence', floodHandler.presenceHandler)
 
-while 1:
-	nick=mess.getFrom().getResource()
-	text=mess.getBody()
-	bot.client.step()
-	print "TEXT: " + text
+client.joinMUC("pyrefly", "testmoth@chat.speeqe.com")
+
+while client.step():
+	pass

@@ -18,19 +18,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import xmpp
 
-class XMPPConnection:
+class xmppClient:
 	connected = False
 	mucs = {}
 
-	validHandlerTypes = ['message', 'presence']
-	
-	def __init__(self, jid, password):
+	validHandlerNames = ['message', 'presence']
+
+	def __init__(self, jid, password, debug=[]):
 		jid = xmpp.JID(jid)
 		self.user = jid.getNode()
 		self.server = jid.getDomain()
 		self.password = password
 
-		self.client = xmpp.Client(self.server)
+		self.client = xmpp.Client(self.server, debug=debug)
 		res = self.client.connect()
 
 		if not res:
@@ -43,55 +43,37 @@ class XMPPConnection:
 			print "Error authenticating user: " + self.user
 			return
 
-		#Should point elsewhere.
-		#self.client.RegisterHandler('message', self.messageHandler)
-		#self.client.RegisterHandler('presence', self.presenceHandler);
-
 		self.client.sendInitPresence()
-
-		self.connected = True
-
-  
-	
-		
-
-
 
 	def disconnect(self):
 		self.client.disconnect()
-		self.connected = False
 
 	def isConnected(self):
-		return self.connected
+		return self.client.isConnected()
 
 	def joinMUC(self, nick, muc, password=''):
-		p = xmpp.Presence(to=muc + '/' + nick)
-		p.setTag('x', namespace=xmpp.NS_MUC).setTagData('password', password)
-		p.getTag('x').addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
-		self.client.send(p)
+		presence = xmpp.Presence(to=muc + '/' + nick)
+		presence.setTag('x', namespace=xmpp.NS_MUC).setTagData('password', password)
+		presence.getTag('x').addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
+		self.client.send(presence)
 
-	def sendMessage(self, jid, message, tp='chat'):
-		m = xmpp.protocol.Message(to=jid, body=message, typ=tp)
-		self.client.send(m)
+	def sendMessage(self, jid, message, type='chat'):
+		message = xmpp.protocol.Message(to=jid, body=message, typ=type)
+		self.client.send(message)
 
 	def step(self):
 		try:
 			self.client.Process(0.1)
 		except KeyboardInterrupt:
 			return 0
-
 		return 1
 
 	def getMUC(self, name):
 		if name in self.mucs:
 			return self.mucs[name]
 
-	def registerHandler(self, type, handler):
-		if type in validHandlerTypes:
-			self.client.RegisterHandler(type, handler)
+	def registerHandler(self, name, handler):
+		if name in self.validHandlerNames:
+			self.client.RegisterHandler(name, handler)
 		else:
 			raise ValueError()
-
-		
-
-
