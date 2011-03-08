@@ -1,8 +1,9 @@
-jid = pyrefly@talkr.im/bot
-password = abc
+[DEFAULT]
+nick = pyrefly
+id = ****@talkr.im/bot
+password = ****
 
 [testmoth@chat.speeqe.com]
-nickname = pyrefly
 
-[testmoth@conference.jabber.org]
-nickname = firefly
+[sandmoth@chat.speeqe.com]
+nick = camelfly

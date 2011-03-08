@@ -16,24 +16,57 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from xmppClient import xmppClient
+import xmpp
+import ConfigParser
+
+import xmppUtils
 from handlers import commandHandler
 
-# TODO: parse config files
-# TODO: initialize bot
-# TODO: add handlers to bot
 # TODO: register commands/plugins
 # TODO: add SIGINT and exit handlers
-# TODO: loop forever
 
+# parse config files
+botConf = "bot.conf"
 
-client = xmppClient("jid@example.com/bot", "password")
-client.registerHandler('message', commandHandler.messageHandler)
+conf = ConfigParser.RawConfigParser()
+conf.read(botConf)
+
+jid = xmpp.JID(conf.get("DEFAULT", "id"))
+user = jid.getNode()
+server = jid.getDomain()
+password = conf.get("DEFAULT", "password")
+
+# initialize bot
+client = xmpp.Client(server, debug=[]);
+
+res = client.connect()
+
+if not res:
+	print "Error connecting to server: " + server
+	exit(2)
+
+res = client.auth(user, password)
+
+if not res:
+	print "Error authenticating user: " + user
+	exit(3)
+
+client.sendInitPresence()
+
+# add handlers to bot
+client.RegisterHandler('message', commandHandler.messageHandler)
 #client.registerHandler('presence', commandHandler.presenceHandler)
 #client.registerHandler('message', floodHandler.messageHandler)
 #client.registerHandler('presence', floodHandler.presenceHandler)
 
-client.joinMUC("pyrefly", "testmoth@chat.speeqe.com")
+for room in conf.sections():
+	if conf.get(room, "nick"):
+		nick = conf.get(room, "nick")
+	else:
+		nick = conf.get("DEFAULT", "nick")
 
-while client.step():
+	xmppUtils.joinMUC(client, nick, room)
+
+# loop forever
+while xmppUtils.step(client):
 	pass

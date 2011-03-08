@@ -17,14 +17,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import xmpp;
-import xmppClient;
 from commands import say
 
 commands = {'say': say.plugin()}
 mucs = {}
 
-def messageHandler(con, msg):
+def messageHandler(client, msg):
 	print '[%s] <%s> %s' % (msg.getType(), msg.getFrom(), msg.getBody())
+
+	# TODO: ignore messages from itself
 
 	data = msg.getBody()
 	nick = msg.getFrom().getResource()
@@ -32,12 +33,14 @@ def messageHandler(con, msg):
 	if not nick:
 		return
 
-	if len(data) >= 2 and data[0] == '!':
+	# TODO: commands = starting with NICK or '!' or private messages
+
+	if data and len(data) >= 2 and data[0] == '!':
 		argSplit = data[1:].split(' ', 1)
 		command = argSplit[0]
 		args = argSplit[1] if len(argSplit) == 2 else '';
 		if command in commands:
-			commands[command].execute(msg.getFrom(), msg.getType(), args, con);
+			commands[command].execute(msg.getFrom(), msg.getType(), args, client);
 
 def presenceHandler(con, pres):
 	MUC = False
