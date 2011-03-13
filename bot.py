@@ -20,9 +20,8 @@ import xmpp
 import ConfigParser
 
 import xmppUtils
-from handlers import commandHandler
+from handlers import commandHandler, logHandler
 
-# TODO: register commands/plugins
 # TODO: add SIGINT and exit handlers
 
 # parse config files
@@ -39,34 +38,38 @@ password = conf.get("DEFAULT", "password")
 # initialize bot
 client = xmpp.Client(server, debug=[]);
 
-res = client.connect()
+connResult = client.connect()
 
-if not res:
+if not connResult:
 	print "Error connecting to server: " + server
 	exit(2)
 
-res = client.auth(user, password)
+connResult = client.auth(user, password)
 
-if not res:
+if not connResult:
 	print "Error authenticating user: " + user
 	exit(3)
 
 client.sendInitPresence()
 
-# add handlers to bot
+xmppUtils.client = client
+
 client.RegisterHandler('message', commandHandler.messageHandler)
-#client.registerHandler('presence', commandHandler.presenceHandler)
-#client.registerHandler('message', floodHandler.messageHandler)
-#client.registerHandler('presence', floodHandler.presenceHandler)
+client.RegisterHandler('presence', xmppUtils.rosterHandler)
+client.RegisterHandler('message', logHandler.messageHandler)
+client.RegisterHandler('presence', logHandler.presenceHandler)
 
 for room in conf.sections():
+	if not '@' in room:
+		continue
+
 	if conf.get(room, "nick"):
 		nick = conf.get(room, "nick")
 	else:
 		nick = conf.get("DEFAULT", "nick")
 
-	xmppUtils.joinMUC(client, nick, room)
+	xmppUtils.joinMUC(nick, room)
 
 # loop forever
-while xmppUtils.step(client):
+while xmppUtils.step():
 	pass

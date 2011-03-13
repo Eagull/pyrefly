@@ -16,30 +16,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import commands
-from commands import *
-
-commandMap = {}
-
-for commandClassName in commands.__all__:
-	command = getattr(commands, commandClassName)
-	commandMap[command.commandText] = command
-
 def messageHandler(client, msg):
-	# TODO: ignore messages from self
+	print '[%s] <%s> %s' % (msg.getType(), msg.getFrom(), msg.getBody())
 
-	data = msg.getBody()
-	nick = msg.getFrom().getResource()
+def presenceHandler(client, pres):
+	print pres
+#	MUC = False
+#	for tag in pres.getTags('x'):
+#		ns = tag.getNamespace()
+#		if ns.startswith(xmpp.NS_MUC):
+#			MUC = True
+#
+#	if MUC:
+#		room = unicode(pres.getFrom())
+#		nick = room[room.find('/') + 1:]
+#		room = room[:room.find('/')]
 
-	if not nick:
-		return
-
-	# TODO: commandList = starting with NICK or '!' or private messages
-
-	if data and len(data) >= 2 and data[0] == '!':
-		argSplit = data[1:].split(' ', 1)
-		command = argSplit[0]
-		args = argSplit[1] if len(argSplit) == 2 else '';
-		if command in commandMap:
-			# TODO: check authorization for given command
-			commandMap[command].process(msg.getFrom(), msg.getType(), args, client);
+#		type = pres.getType()
+#		role = pres.getRole()
+#		affil = pres.getAffiliation()
+#		status = pres.getStatus()
+#		jid = pres.getJid()
