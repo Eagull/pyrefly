@@ -1,1 +1,1 @@
-__all__ = ["say", "voice", "devoice"]
+__all__ = ["say", "voice", "devoice", "kick"]
