@@ -1,7 +1,7 @@
 import xmppUtils
 
 commandText = 'kick'
-helpText = 'Write arguments to the standard output.'
+helpText = 'Kick the specified user.'
 
 def process(sender, type, args, client):
 	if len(args) > 0:

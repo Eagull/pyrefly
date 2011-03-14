@@ -16,25 +16,31 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-def messageHandler(client, msg):
-	if msg.getBody():
-		print '[%s] <%s> %s' % (msg.getType()[:1], msg.getFrom(), msg.getBody())
+import ConfigParser, hashlib
 
-def presenceHandler(client, pres):
-	print pres
-#	MUC = False
-#	for tag in pres.getTags('x'):
-#		ns = tag.getNamespace()
-#		if ns.startswith(xmpp.NS_MUC):
-#			MUC = True
-#
-#	if MUC:
-#		room = unicode(pres.getFrom())
-#		nick = room[room.find('/') + 1:]
-#		room = room[:room.find('/')]
+# parse config files
+botConf = "bot.conf"
 
-#		type = pres.getType()
-#		role = pres.getRole()
-#		affil = pres.getAffiliation()
-#		status = pres.getStatus()
-#		jid = pres.getJid()
+conf = ConfigParser.RawConfigParser()
+conf.read(botConf)
+sha1 = hashlib.sha1()
+fp = open(botConf)
+sha1.update(fp.read())
+hash = sha1.hexdigest()
+fp.close();
+
+def get(option, section='default'):
+	return conf.get(section, option)
+
+def getRoomList():
+	roomList = []
+	for room in conf.sections():
+		if '@' in room:
+			roomList.append(room)
+	return roomList
+
+def set(option, value, section='default'):
+	conf.set(section, option, value)
+	fp = open(botConf, 'w')
+	conf.write(fp)
+	fp.close()

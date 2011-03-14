@@ -29,16 +29,19 @@ def messageHandler(client, msg):
 	# TODO: ignore messages from self
 
 	data = msg.getBody()
-	nick = msg.getFrom().getResource()
+#	nick = msg.getFrom().getResource()
 
-	if not nick:
-		return
+#	if not nick:
+#		return
 
 	# TODO: commandList = starting with NICK or '!' or private messages
 
+	# TODO: Handle !help here
+	# xmppUtils.sendMessage(sender, command.helpText, type)
+
 	if data and len(data) >= 2 and data[0] == '!':
 		argSplit = data[1:].split(' ', 1)
-		command = argSplit[0]
+		command = argSplit[0].lower()
 		args = argSplit[1] if len(argSplit) == 2 else '';
 		if command in commandMap:
 			# TODO: check authorization for given command

@@ -1,7 +1,13 @@
-[DEFAULT]
+[default]
 nick = pyrefly
 id = ****@talkr.im/bot
 password = ****
+
+[omegle]
+id = ****@talkr.im/bot
+password = ****
+server = http://bajor.omegle.com
+nickList = ['Omegler', 'Stranger', 'Strangler', 'Creeper', 'Monster']
 
 [testmoth@chat.speeqe.com]
 

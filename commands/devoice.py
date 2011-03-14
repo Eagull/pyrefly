@@ -1,7 +1,7 @@
 import xmppUtils
 
 commandText = 'devoice'
-helpText = 'Write arguments to the standard output.'
+helpText = 'Devoice the specified user.'
 
 def process(sender, type, args, client):
 	if len(args) > 0:

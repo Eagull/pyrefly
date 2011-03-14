@@ -16,13 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.	If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from xmpp.protocol import NS_MUC_USER, Iq, NS_MUC_ADMIN
+from xmpp.protocol import NS_MUC_USER, Iq, NS_MUC_ADMIN, JID
 import xmpp
 
 nicks = {}
 rosters = dict()
 joining = []
 client = None
+
+def setClient(clientObj):
+	global client
+	client = clientObj
+	client.nicks = nicks
+	client.rosters = rosters
 
 def joinMUC(nick, muc, password=''):
 	joining.append(muc)
@@ -34,6 +40,9 @@ def joinMUC(nick, muc, password=''):
 	client.send(presence)
 
 def sendMessage(jid, message, type='chat'):
+	if type == 'groupchat':
+		jid = JID(jid).getStripped()
+	print '[%s] <me> %s' % (type[:1], str(message))
 	message = xmpp.protocol.Message(to=jid, body=message, typ=type)
 	client.send(message)
 
@@ -112,10 +121,3 @@ def rosterHandler(sess, pres):
 
 		if nick == nicks[muc]:
 			if muc in joining: joining.remove(muc)
-
-def step():
-	try:
-		client.Process(0.1)
-	except KeyboardInterrupt:
-		return 0
-	return 1

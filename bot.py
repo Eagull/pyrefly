@@ -17,59 +17,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import xmpp
-import ConfigParser
+import config
 
 import xmppUtils
 from handlers import commandHandler, logHandler
 
 # TODO: add SIGINT and exit handlers
 
-# parse config files
-botConf = "bot.conf"
-
-conf = ConfigParser.RawConfigParser()
-conf.read(botConf)
-
-jid = xmpp.JID(conf.get("DEFAULT", "id"))
-user = jid.getNode()
-server = jid.getDomain()
-password = conf.get("DEFAULT", "password")
+jid = xmpp.JID(config.get("id"))
 
 # initialize bot
-client = xmpp.Client(server, debug=[]);
-
+client = xmpp.Client(jid.getDomain(), debug=[]);
 connResult = client.connect()
-
 if not connResult:
-	print "Error connecting to server: " + server
+	print "Error connecting to server: " + jid.getDomain()
 	exit(2)
 
-connResult = client.auth(user, password)
+resource = 'bot' + config.hash[:6]
 
+connResult = client.auth(jid.getNode(), config.get("password"), resource)
 if not connResult:
-	print "Error authenticating user: " + user
+	print "Error authenticating user: " + jid.getNode()
 	exit(3)
 
 client.sendInitPresence()
 
-xmppUtils.client = client
+xmppUtils.setClient(client)
 
-client.RegisterHandler('message', commandHandler.messageHandler)
-client.RegisterHandler('presence', xmppUtils.rosterHandler)
 client.RegisterHandler('message', logHandler.messageHandler)
 client.RegisterHandler('presence', logHandler.presenceHandler)
+client.RegisterHandler('presence', xmppUtils.rosterHandler)
+client.RegisterHandler('message', commandHandler.messageHandler)
 
-for room in conf.sections():
-	if not '@' in room:
-		continue
-
-	if conf.get(room, "nick"):
-		nick = conf.get(room, "nick")
-	else:
-		nick = conf.get("DEFAULT", "nick")
-
+for room in config.getRoomList():
+	nick = config.get("nick", room)
 	xmppUtils.joinMUC(nick, room)
 
 # loop forever
-while xmppUtils.step():
-	pass
+try:
+	while client.Process(0.1):
+		pass
+except KeyboardInterrupt:
+	exit(0)
