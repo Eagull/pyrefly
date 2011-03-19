@@ -8,3 +8,5 @@ def process(sender, type, args, client):
 		room = sender.getStripped()
 		senderNick = sender.getResource()
 		xmppUtils.setRole(room, args, 'none', 'Requested by ' + senderNick)
+		
+		
