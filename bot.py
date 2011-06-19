@@ -21,6 +21,7 @@ import config
 
 import xmppUtils
 from handlers import commandHandler, logHandler
+import dictionary
 
 # TODO: add SIGINT and exit handlers
 

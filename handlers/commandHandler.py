@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import commands
+import dictionary
 from commands import *
 
 commandMap = {}
@@ -46,3 +47,10 @@ def messageHandler(client, msg):
 		if command in commandMap:
 			# TODO: check authorization for given command
 			commandMap[command].process(msg.getFrom(), msg.getType(), args, client);
+		elif command == "learn" or command == "forget" or command == "relearn": # uncomment this last bit to ENABLE relearning
+			dictionary.process(msg.getFrom(), data[1:])
+
+	elif data and len(data) >= 2 and data[0] == '?': # THIS IS FOR DICT FUNCS (namely recall)
+		dictionary.process(msg.getFrom(), data[1:]);
+
+
