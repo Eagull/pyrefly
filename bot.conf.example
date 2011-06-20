@@ -9,7 +9,11 @@ password = ****
 server = http://bajor.omegle.com
 nickList = ['Omegler', 'Stranger', 'Strangler', 'Creeper', 'Monster']
 
-[testmoth@chat.speeqe.com]
+[dictionary]
+spreadsheet_id = 0AnH6-TZ2sGredGU5ZGJHbGlyRlR2dXVNbnJUWmFvVUE
+worksheet_id = od6
+account =  ****@mail.com
+pass = ****
 
-[sandmoth@chat.speeqe.com]
-nick = camelfly
+[testmoth@chat.speeqe.com]
+nick = pyrefly
