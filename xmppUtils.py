@@ -42,7 +42,11 @@ def joinMUC(nick, muc, password=''):
 def sendMessage(jid, message, type='chat'):
 	if type == 'groupchat':
 		jid = JID(jid).getStripped()
-	print '[%s] <me> %s' % (type[:1], str(message))
+	try:
+		print '[%s] <me> %s' % (type[:1], str(message))
+	except UnicodeEncodeError:
+		string = '[%s] <me> %s' % (type[:1], repr(message))
+		print string.encode('utf-8')
 	message = xmpp.protocol.Message(to=jid, body=message, typ=type)
 	client.send(message)
 
