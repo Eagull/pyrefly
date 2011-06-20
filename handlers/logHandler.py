@@ -16,12 +16,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-def messageHandler(client, msg):
+def messageHandler(client, msg): # Now with 50% more try: !
 	if msg.getBody():
-		print '[%s] <%s> %s' % (msg.getType()[:1], msg.getFrom(), msg.getBody())
+		try:
+			print '[%s] <%s> %s' % (msg.getType()[:1], msg.getFrom(), msg.getBody())
+		except UnicodeEncodeError:
+			string = '[%s] <%s> %s' % (msg.getType()[:1], msg.getFrom(), msg.getBody())
+			print string.encode('utf-8')
 
-def presenceHandler(client, pres):
-	print pres
+def presenceHandler(client, pres): # Now with 50% more try: !
+	try:
+		print pres
+	except UnicodeEncodeError:
+		string = pres
+		try:
+			print string.encode('utf-8')
+		except AttributeError:
+			pass
+
 #	MUC = False
 #	for tag in pres.getTags('x'):
 #		ns = tag.getNamespace()
