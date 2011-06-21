@@ -33,60 +33,73 @@ gdataclient.source = NICK
 gdataclient.ProgrammaticLogin()
 
 def process(SENDER, ARGS):
-	if len(ARGS) > 0:
-		ROOM = SENDER.getStripped()
-		NICK = SENDER.getResource()
-		tosay = 0
-		SPLIT = ARGS.split(" ", 2)
-		CODE = len(SPLIT)
+	tosay = 0
+	try:
+		str(ARGS)
+		if len(ARGS) > 0:
 
-		# SPLIT[0] = learn, SPLIT[1] = TERM, SPLIT[2] = WHAT
-		if CODE == 3 and SPLIT[0] == "learn":
-			if SPLIT[1] == "splash":
-				tosay = "Let me put it this way, I do not WANT to know splash"
-			#~ elif not xmppUtils.isMember(ROOM,NICK):
-				#~ tosay = "You are not allowed to teach me!"
+			ROOM = SENDER.getStripped()
+			NICK = SENDER.getResource()
+			SPLIT = ARGS.split(" ", 2)
+			CODE = len(SPLIT)
+
+
+
+			# SPLIT[0] = learn, SPLIT[1] = TERM, SPLIT[2] = WHAT
+			if CODE == 3 and SPLIT[0] == "learn":
+				if SPLIT[1] == "splash":
+					tosay = "Let me put it this way, I do not WANT to know splash"
+				#~ elif not xmppUtils.isMember(ROOM,NICK):
+					#~ tosay = "You are not allowed to teach me!"
+				else:
+					tosay = learn(SPLIT[1], SPLIT[2], NICK)
+					if tosay == 1:
+						tosay = "/me learned "+SPLIT[1]+"!"
+					elif tosay == 2:
+						tosay = "/me already knows "+SPLIT[1]+"!"
+					elif tosay == 0:
+						tosay = "Something went terribly wrong...."
+
+			# This functionality will never be used, because it is deactivated in commandhandler line 50
+			# SPLIT[0] = relearn, SPLIT[1] = TERM, SPLIT[2] = WHAT
+			elif CODE == 3 and SPLIT[0] == "relearn": # this is a little redundant, as you could have it call learn on "redef" and "redefine" and it would do the same bloody thing
+				#~ if not xmppUtils.isMember(ROOM,NICK):
+					#~ tosay = "You are not allowed to change WHAT I know!"
+				#~ else:
+					tosay = relearn(SPLIT[1], SPLIT[2], NICK)
+					if tosay == 1:
+						tosay = "/me : Redefining "+SPLIT[1]+" since 1970."
+					else:
+						tosay = "Something went terribly wrong...."
+
+			# SPLIT[0] = forget, SPLIT[1] = TERM, SPLIT[2] = (NA"garbage)
+			elif CODE >= 2 and SPLIT[0] == "forget":
+				#~ if not xmppUtils.isModerator(ROOM,NICK):
+					#~ tosay = "You are not allowed to make me forget!"
+				#~ else:
+				if SPLIT[1] == "splash":
+					tosay = "Gladly."
+					forget(SPLIT[1])
+				else:
+					if forget(SPLIT[1]) == 1:
+						tosay = "/me forgot "+SPLIT[1]+" D:"
+					else:
+						tosay = "Can't forget WHAT I don't know!"
+
+			# SPLIT[0] = TERM, SPLIT[1] = (NA|garbage), SPLIT[2] = (NA{garbage)
 			else:
-				tosay = learn(SPLIT[1], SPLIT[2], NICK)
-				if tosay == 1:
-					tosay = "/me learned "+SPLIT[1]+"!"
-				elif tosay == 2:
-					tosay = "/me already knows "+SPLIT[1]+"!"
-				elif tosay == 0:
-					tosay = "Something went terribly wrong...."
+				tosay = recall(SPLIT[0])
+				if tosay == 0:
+					tosay = "I do not know "+SPLIT[0]+"!"
+				elif tosay == -1:
+					tosay = 0
 
-		# This functionality will never be used, because it is deactivated in commandhandler line 50
-		# SPLIT[0] = relearn, SPLIT[1] = TERM, SPLIT[2] = WHAT
-		elif CODE == 3 and SPLIT[0] == "relearn": # this is a little redundant, as you could have it call learn on "redef" and "redefine" and it would do the same bloody thing
-			#~ if not xmppUtils.isMember(ROOM,NICK):
-				#~ tosay = "You are not allowed to change WHAT I know!"
-			#~ else:
-				tosay = relearn(SPLIT[1], SPLIT[2], NICK)
-				if tosay == 1:
-					tosay = "/me : Redefining "+SPLIT[1]+" since 1970."
-				else:
-					tosay = "Something went terribly wrong...."
+		elif len(ARGS) == 0:
+			print len(ARGS)
+			tosay = "If you would like me to recall something, type ? and then your query. Example: ?test\rYou may try this now"
 
-		# SPLIT[0] = forget, SPLIT[1] = TERM, SPLIT[2] = (NA"garbage)
-		elif CODE >= 2 and SPLIT[0] == "forget":
-			#~ if not xmppUtils.isModerator(ROOM,NICK):
-				#~ tosay = "You are not allowed to make me forget!"
-			#~ else:
-				if forget(SPLIT[1]) == 1:
-					tosay = "/me forgot "+SPLIT[1]+" D:"
-				else:
-					tosay = "Can't forget WHAT I don't know!"
-
-		# SPLIT[0] = TERM, SPLIT[1] = (NA|garbage), SPLIT[2] = (NA{garbage)
-		else:
-			tosay = recall(SPLIT[0])
-			if tosay == 0:
-				tosay = "I do not know "+SPLIT[0]+"!"
-			elif tosay == -1:
-				tosay = 0
-
-	elif len(ARGS) == 0:
-		tosay = "If you would like me to recall something, type ? and then your query. Example: ?test\rYou may try this now"
+	except UnicodeEncodeError:
+		tosay = "Now now, let's not mess up our nice dictionary with your useless unicode blarky"
 
 	if tosay <> 0:
 		ROOM = SENDER.getStripped()
