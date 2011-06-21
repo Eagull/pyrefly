@@ -94,7 +94,7 @@ class OmegleClient:
 		self.omegleClient.confirmCaptcha(unicode(captchaText).encode('utf-8'))
 
 	def sendToOmegle(self, msg):
-		print '[o:' + self.nick + '] tx: ' + msg
+		#~ print '[o:' + self.nick + '] tx: ' + msg
 		self.omegleClient.sendMessage(unicode(msg).encode('utf-8'))
 
 	def sendToXMPP(self, msg):
@@ -126,15 +126,15 @@ class OmegleClient:
 		presence.getTag('x').addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
 		self.xmppClient.send(presence)
 		self.connected = True
-		print '[o:' + self.nick + '] joined'
+		#~ print '[o:' + self.nick + '] joined'
 #		self.sendToXMPP('Stranger connected...')
 
 	def omegleMessage(self, msg):
-		print '[o:' + self.nick + '] rx: ' + msg
+		#~ print '[o:' + self.nick + '] rx: ' + msg
 		self.sendToXMPP(msg)
 
 	def omegleLeave(self):
-		print '[o:' + self.nick + '] left'
+		#~ print '[o:' + self.nick + '] left'
 		self.stop()
 
 	def omegleCaptchaRequired(self, url):
@@ -143,10 +143,10 @@ class OmegleClient:
 			presence.setTag('x', namespace=xmpp.NS_MUC).setTagData('password', '')
 			presence.getTag('x').addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
 			self.xmppClient.send(presence)
-		print '[o:' + self.nick + '] captcha: ' + url
+		#~ print '[o:' + self.nick + '] captcha: ' + url
 		self.sendToXMPP('.* CAPTCHA: ' + url)
 
 	def omegleCaptchaRejected(self):
-		print '[o:' + self.nick + '] captcha rejected'
+		#~ print '[o:' + self.nick + '] captcha rejected'
 		self.sendToXMPP('CAPTCHA rejected, disconnecting...')
 		self.stop()
