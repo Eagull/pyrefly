@@ -24,7 +24,8 @@ def messageHandler(client, msg): # Now with 50% more try: !
 			string = '[%s] <%s> %s' % (msg.getType()[:1], msg.getFrom(), msg.getBody())
 			print string.encode('utf-8')
 
-def presenceHandler(client, pres): # Now with 50% more try: !
+def presenceHandler(client, pres): # Now with 50% more try:
+
 	try:
 		print pres
 	except UnicodeEncodeError:
