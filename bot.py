@@ -20,7 +20,8 @@ import xmpp
 import config
 
 import xmppUtils
-from handlers import commandHandler, logHandler
+from handlers import commandHandler, logHandler, fightHandler
+import pyrefight
 import dictionary
 
 # TODO: add SIGINT and exit handlers
@@ -45,10 +46,13 @@ client.sendInitPresence()
 
 xmppUtils.setClient(client)
 
-client.RegisterHandler('message', logHandler.messageHandler)
+#~ client.RegisterHandler('message', logHandler.messageHandler)
 client.RegisterHandler('presence', logHandler.presenceHandler)
 client.RegisterHandler('presence', xmppUtils.rosterHandler)
 client.RegisterHandler('message', commandHandler.messageHandler)
+
+client.RegisterHandler('message', fightHandler.messageHandler)
+client.RegisterHandler('presence', pyrefight.presHandler)
 
 for room in config.getRoomList():
 	nick = config.get("nick", room)
