@@ -15,5 +15,10 @@ worksheet_id = od6
 account =  ****@mail.com
 pass = ****
 
+[pyrefight]
+spreadsheet_id = <google spreadsheet id can be found in the URL of the spreadsheet>
+account =  ****@mail.com
+pass = ****
+
 [testmoth@chat.speeqe.com]
 nick = pyrefly
