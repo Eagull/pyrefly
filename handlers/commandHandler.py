@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import commands
+import xmppUtils
 import dictionary
 from commands import *
 
@@ -37,7 +38,7 @@ def messageHandler(client, msg):
 
 	# TODO: commandList = starting with NICK or '!' or private messages
 
-	# TODO: Handle !help here
+	# TODO: Handle !help here - !help is a command
 	# xmppUtils.sendMessage(sender, command.helpText, type)
 
 	if data and len(data) >= 2 and data[0] == '!':
@@ -46,7 +47,10 @@ def messageHandler(client, msg):
 		args = argSplit[1] if len(argSplit) == 2 else '';
 		if command in commandMap:
 			# TODO: check authorization for given command
-			commandMap[command].process(msg.getFrom(), msg.getType(), args, client);
+			# Now ignores devoiced users
+			if xmppUtils.rosters[msg.getFrom().getStripped()][msg.getFrom().getResource()][1] <> 'visitor':
+				commandMap[command].process(msg.getFrom(), msg.getType(), args, client);
+
 		elif command == "learn" or command == "forget" or command == "relearn": # uncomment this last bit to ENABLE relearning
 			dictionary.process(msg.getFrom(), data[1:])
 
