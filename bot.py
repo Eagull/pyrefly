@@ -20,7 +20,7 @@ import xmpp
 import config
 
 import xmppUtils
-from handlers import commandHandler, logHandler, fightHandler
+from handlers import commandHandler, logHandler, fightHandler, swearHandler, replyHandler
 import pyrefight
 import dictionary
 
@@ -51,8 +51,11 @@ client.RegisterHandler('presence', logHandler.presenceHandler)
 client.RegisterHandler('presence', xmppUtils.rosterHandler)
 client.RegisterHandler('message', commandHandler.messageHandler)
 
-client.RegisterHandler('message', fightHandler.messageHandler)
-client.RegisterHandler('presence', pyrefight.presHandler)
+client.RegisterHandler('message', replyHandler.messageHandler)
+client.RegisterHandler('message', swearHandler.messageHandler)
+
+#~ client.RegisterHandler('message', fightHandler.messageHandler)
+#~ client.RegisterHandler('presence', pyrefight.presHandler)
 
 for room in config.getRoomList():
 	nick = config.get("nick", room)

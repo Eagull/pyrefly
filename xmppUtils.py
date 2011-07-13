@@ -42,11 +42,8 @@ def joinMUC(nick, muc, password=''):
 def sendMessage(jid, message, type='chat'):
 	if type == 'groupchat':
 		jid = JID(jid).getStripped()
-	try:
-		print '[%s] <me> %s' % (type[:1], str(message))
-	except UnicodeEncodeError:
-		string = '[%s] <me> %s' % (type[:1], repr(message))
-		print string.encode('utf-8')
+	string = '[%s] <me> %s' % (type[:1], repr(message))
+	print string.encode('utf-8') # unicode fix #
 	message = xmpp.protocol.Message(to=jid, body=message, typ=type)
 	client.send(message)
 
@@ -58,8 +55,13 @@ def setRole(room, nick, role, reason=''):
 	if reason: item.addChild('reason', {}, reason)
 	client.send(iq)
 
-def setAffiliation(muc, nick):
-	pass
+def setAffiliation(room, nick, affiliation, reason=''):
+	iq = Iq('set', NS_MUC_ADMIN, {}, room)
+	item = iq.getTag('query').setTag('item')
+	item.setAttr('nick', nick)
+	item.setAttr('affiliation', affiliation)
+	if reason: item.addChild('reason', {}, reason)
+	client.send(iq)
 
 def isModerator(muc, nick):
 	if not nick in rosters[muc]: return 0
