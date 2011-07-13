@@ -1,5 +1,5 @@
 import xmppUtils
-#test
+
 commandText = 'act'
 helpText = 'Makes the bot do things in third person.'
 
