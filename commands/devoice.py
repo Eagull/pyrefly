@@ -4,7 +4,11 @@ commandText = 'devoice'
 helpText = 'Devoice the specified user.'
 
 def process(sender, type, args, client):
-	if len(args) > 0:
-		room = sender.getStripped()
-		senderNick = sender.getResource()
-		xmppUtils.setRole(room, args, 'visitor', 'Requested by ' + senderNick)
+	room = sender.getStripped()
+	comSend = sender.getResource()
+	if xmppUtils.isModerator(room, comSend):
+		if len(args) > 0:
+			senderNick = sender.getResource()
+			xmppUtils.setRole(room, args, 'visitor', 'Requested by ' + senderNick)
+	elif not xmppUtils.isAdmin(room, comSend):
+		xmppUtils.sendMessage(room, 'Unauthorized.', type='groupchat')
