@@ -49,8 +49,8 @@ def process(SENDER, ARGS):
 			if CODE == 3 and SPLIT[0] == "learn":
 				if SPLIT[1] == "splash":
 					tosay = "Let me put it this way, I do not WANT to know splash"
-				#~ elif not xmppUtils.isMember(ROOM,NICK):
-					#~ tosay = "You are not allowed to teach me!"
+				elif not xmppUtils.isMember(ROOM,NICK):
+					tosay = "You are not allowed to teach me!"
 				else:
 					tosay = learn(SPLIT[1], SPLIT[2], NICK)
 					if tosay == 1:
