@@ -26,25 +26,26 @@ import dictionary
 
 # TODO: add SIGINT and exit handlers
 
-jid = xmpp.JID(config.get("id"))
+class Pyrefly(object):
 
-# initialize bot
-client = xmpp.Client(jid.getDomain(), debug=[]);
-connResult = client.connect()
-if not connResult:
-	print "Error connecting to server: " + jid.getDomain()
-	exit(2)
-
-resource = 'bot' + config.hash[:6]
-
-connResult = client.auth(jid.getNode(), config.get("password"), resource)
-if not connResult:
-	print "Error authenticating user: " + jid.getNode()
-	exit(3)
-
-client.sendInitPresence()
-
-xmppUtils.setClient(client)
+  def __init__(self, config):
+    self.config = config
+    self.jid = xmpp.JID(config.get("id"))
+    self.client = xmpp.Client(self.jid.getDomain(), debug=[])
+  
+  def connect(self):
+    connResult = self.client.connect()
+    if not connResult:
+      print "Error connecting to server: " + jid.getDomain()
+      exit(2)
+    
+    resource = 'bot' + self.config.hash[:6]
+    connResult = self.client.auth(jid.getNode(), self.config.get("password"), resource)
+    if not connResult:
+      print "Error authenticating user: " + jid.getNode()
+      exit(3)
+    
+    self.client.sendInitPresence()
 
 #~ client.RegisterHandler('message', logHandler.messageHandler)
 client.RegisterHandler('presence', logHandler.presenceHandler)
@@ -54,8 +55,8 @@ client.RegisterHandler('message', commandHandler.messageHandler)
 client.RegisterHandler('message', replyHandler.messageHandler)
 client.RegisterHandler('message', swearHandler.messageHandler)
 
-#~ client.RegisterHandler('message', fightHandler.messageHandler)
-#~ client.RegisterHandler('presence', pyrefight.presHandler)
+client.RegisterHandler('message', fightHandler.messageHandler)
+client.RegisterHandler('presence', pyrefight.presHandler)
 
 for room in config.getRoomList():
 	nick = config.get("nick", room)
