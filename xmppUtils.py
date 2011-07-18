@@ -19,41 +19,50 @@ along with this program.	If not, see <http://www.gnu.org/licenses/>.
 from xmpp.protocol import NS_MUC_USER, Iq, NS_MUC_ADMIN, JID
 import xmpp
 
-nicks = {}
-rosters = dict()
-joining = []
-client = None
+class XmppUtil(object):
+  
+  def __init__(self, client):
+    self.client = client
+    self.myNick = dict()
+    self.rosters = dict()
+    self.joining = list()
+    
+  def joinMUC(self, nick, muc, password=''):
+    self.joining.append(muc)
+    self.rosters[muc] = dict()
+    self.myNick[muc] = nick
+    
+    roomId = '%s/%s' % (muc, nick)
+    
+    presence = xmpp.Presence(to=roomId)
+    x = presence.setTag('x', namespace=xmpp.NS_MUC)
+    x.setTagData('password', password)
+    x.addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
+    self.client.send(presence)
 
-def setClient(clientObj):
-	global client
-	client = clientObj
-	client.nicks = nicks
-	client.rosters = rosters
+  def sendMessage(self, jid, message, type):
+    # Log the outgoing message.
+    log = u'[%s] <me> %s' % (type[:1], message)
+    print log.encode('utf-8')
+    
+    message = xmpp.protocol.Message(to=jid, body=message, type=type)
+    self.client.send(message)
+    
+  def sendMUCMessage(self, jid, message):
+    self.sendMessage(JID(jid).getStripped(), message, 'groupchat')
+  
+  def sendPrivateMessage(self, jid, message):
+    self.sendMessage(jid, message, 'chat')
+  
+  def setRole(self, muc, nick, role, reason=''):
+    iq = Iq('set', NS_MUC_ADMIN, {}, muc)
+    item = iq.getTag('query').setTag('item')
+    item.setAttr('nick', nick)
+    item.setAttr('role', role)
+    if reason:
+      item.addChild('reason', {}, reason)
+    client.send(iq)
 
-def joinMUC(nick, muc, password=''):
-	joining.append(muc)
-	rosters[muc] = {}
-	nicks[muc] = nick
-	presence = xmpp.Presence(to=muc + '/' + nick)
-	presence.setTag('x', namespace=xmpp.NS_MUC).setTagData('password', password)
-	presence.getTag('x').addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
-	client.send(presence)
-
-def sendMessage(jid, message, type='chat'):
-	if type == 'groupchat':
-		jid = JID(jid).getStripped()
-	string = '[%s] <me> %s' % (type[:1], repr(message))
-	print string.encode('utf-8') # unicode fix #
-	message = xmpp.protocol.Message(to=jid, body=message, typ=type)
-	client.send(message)
-
-def setRole(room, nick, role, reason=''):
-	iq = Iq('set', NS_MUC_ADMIN, {}, room)
-	item = iq.getTag('query').setTag('item')
-	item.setAttr('nick', nick)
-	item.setAttr('role', role)
-	if reason: item.addChild('reason', {}, reason)
-	client.send(iq)
 
 def setAffiliation(room, nick, affiliation, reason=''):
 	iq = Iq('set', NS_MUC_ADMIN, {}, room)

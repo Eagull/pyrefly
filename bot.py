@@ -30,41 +30,56 @@ class Pyrefly(object):
 
   def __init__(self, config):
     self.config = config
-    self.jid = xmpp.JID(config.get("id"))
+    self.jid = xmpp.JID(config.get('id'))
     self.client = xmpp.Client(self.jid.getDomain(), debug=[])
   
   def connect(self):
     connResult = self.client.connect()
     if not connResult:
-      print "Error connecting to server: " + jid.getDomain()
+      print "Error connecting to server: %s" % jid.getDomain()
       exit(2)
     
     resource = 'bot' + self.config.hash[:6]
-    connResult = self.client.auth(jid.getNode(), self.config.get("password"), resource)
+    connResult = self.client.auth(jid.getNode(), self.config.get('password'), resource)
     if not connResult:
-      print "Error authenticating user: " + jid.getNode()
+      print "Error authenticating user: %s" % jid.getNode()
       exit(3)
     
+  def joinConfiguredRooms(self):
     self.client.sendInitPresence()
+    self.client.RegisterHandler('presence', self.onPresence)
+    self.client.RegisterHandler('message', self.onMessage)
+  
+    for room in config.getRoomList():
+      self.join(room, config.get('nick', room))
+  
+  def join(self, room, nick):
+    self.xmppUtil.joinMUC(nick, room)
+  
+  def process(self, timeout=0.1):
+    return self.client.Process(timeout)
+    
+  def onPresence(self):
+    pass
+  
+  def onMessage(self):
+    pass
 
-#~ client.RegisterHandler('message', logHandler.messageHandler)
-client.RegisterHandler('presence', logHandler.presenceHandler)
-client.RegisterHandler('presence', xmppUtils.rosterHandler)
-client.RegisterHandler('message', commandHandler.messageHandler)
+##~ client.RegisterHandler('message', logHandler.messageHandler)
+#client.RegisterHandler('presence', logHandler.presenceHandler)
+#client.RegisterHandler('presence', xmppUtils.rosterHandler)
+#client.RegisterHandler('message', commandHandler.messageHandler)
 
-client.RegisterHandler('message', replyHandler.messageHandler)
-client.RegisterHandler('message', swearHandler.messageHandler)
+#client.RegisterHandler('message', replyHandler.messageHandler)
+#client.RegisterHandler('message', swearHandler.messageHandler)
 
-client.RegisterHandler('message', fightHandler.messageHandler)
-client.RegisterHandler('presence', pyrefight.presHandler)
+#client.RegisterHandler('message', fightHandler.messageHandler)
+#client.RegisterHandler('presence', pyrefight.presHandler)
 
-for room in config.getRoomList():
-	nick = config.get("nick", room)
-	xmppUtils.joinMUC(nick, room)
-
-# loop forever
-try:
-	while client.Process(0.1):
-		pass
-except KeyboardInterrupt:
-	exit(0)
+if __name__ == '__main__':
+  pyrefly = Pyrefly()
+  try:
+    while pyrefly.process():
+      pass
+  except KeyboardInterrupt:
+    exit(0)
