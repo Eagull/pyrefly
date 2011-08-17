@@ -9,11 +9,11 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import xmpp
@@ -28,54 +28,93 @@ import dictionary
 
 class Pyrefly(object):
 
-  def __init__(self, config):
-    self.config = config
-    self.jid = xmpp.JID(config.get('id'))
-    self.client = xmpp.Client(self.jid.getDomain(), debug=[])
-    self.handlers = list()
-  
-  def connect(self):
-    connResult = self.client.connect()
-    if not connResult:
-      print "Error connecting to server: %s" % jid.getDomain()
-      exit(2)
-    
-    resource = 'bot' + self.config.hash[:6]
-    connResult = self.client.auth(jid.getNode(), self.config.get('password'), resource)
-    if not connResult:
-      print "Error authenticating user: %s" % jid.getNode()
-      exit(3)
-    
-  def joinConfiguredRooms(self):
-    self.client.sendInitPresence()
-    self.client.RegisterHandler('presence', self.onPresence)
-    self.client.RegisterHandler('message', self.onMessage)
-  
-    for room in config.getRoomList():
-      self.join(room, config.get('nick', room))
-  
-  def join(self, room, nick):
-    self.xmppUtil.joinMUC(nick, room)
-  
-  def process(self, timeout=0.1):
-    return self.client.Process(timeout)
-    
-  def onPresence(self, *args, **kwargs):
-    for handler in self.handlers:
-      handler.onPresence(*args, **kwargs)
-  
-  def onMessage(self, *args, **kwargs):
-    for handler in self.handlers:
-      handler.onMessage(*args, **kwargs)
-    
-  def onRoster(self, *args, **kwargs):
-    for handler in self.handlers:
-      handler.onRoster(*args, **kwargs)
-    pass
-    
-  def registerHandler(self, handler):
-    handler.onRegister()
-    self.handlers.append(handler)
+	def __init__(self, config):
+		self.config = config
+		self.jid = xmpp.JID(config.get('id'))
+		self.client = xmpp.Client(self.jid.getDomain(), debug=[])
+		self.handlers = list()
+		self.plugins = {}
+		self.pluginModules = {}
+	
+	def connect(self):
+		connResult = self.client.connect()
+		if not connResult:
+			print "Error connecting to server: %s" % jid.getDomain()
+			exit(2)
+		
+		resource = 'bot' + self.config.hash[:6]
+		connResult = self.client.auth(jid.getNode(), self.config.get('password'), resource)
+		if not connResult:
+			print "Error authenticating user: %s" % jid.getNode()
+			exit(3)
+		
+	def joinConfiguredRooms(self):
+		self.client.sendInitPresence()
+		self.client.RegisterHandler('presence', self.onPresence)
+		self.client.RegisterHandler('message', self.onMessage)
+	
+		for room in config.getRoomList():
+			self.join(room, config.get('nick', room))
+	
+	def join(self, room, nick):
+		self.xmppUtil.joinMUC(nick, room)
+	
+	def process(self, timeout=0.1):
+		return self.client.Process(timeout)
+		
+	def onPresence(self, *args, **kwargs):
+		for handler in self.handlers:
+			handler.onPresence(*args, **kwargs)
+	
+	def onMessage(self, *args, **kwargs):
+		for handler in self.handlers:
+			handler.onMessage(*args, **kwargs)
+		
+	def onRoster(self, *args, **kwargs):
+		for handler in self.handlers:
+			handler.onRoster(*args, **kwargs)
+		
+	def registerHandler(self, handler):
+		handler.onRegister()
+		self.handlers.append(handler)
+	
+	def unregisterHandler(self, handler):
+		handler.onUnregister()
+		self.handlers.remove(handler)
+
+	def loadPlugin(self, name):
+		name = "plugin.%s"
+		if name in self.plugins:
+			return False
+		self.pluginModules[name] = __import__(name)
+		if not self.pluginModules[name]:
+			del self.pluginModules[name]
+			return False
+		clazz = self.pluginModules[name][name]
+		self.plugins[name] = clazz()
+		self.plugins[name].onLoad(self)
+		return True
+		
+	def unloadPlugin(self, name):
+		for pluginName, plugin in self.plugins:
+			if name in plugin.getDependencies():
+				self.unloadPlugin(pluginName)
+		self.plugins[name].onUnload()
+		del self.plugins[name]
+	
+	def reloadPlugin(self, name):
+		if name not in self.pluginModules:
+			return False
+		plugin = self.plugins[name]
+		plugin.onUnload()
+		reload(self.pluginModules[name])
+		clazz = self.pluginModules[name][name]
+		self.plugins[name] = clazz()
+		self.plugins[name].onLoad(self)
+		for pluginName, plugin in self.plugins:
+			if name in plugin.getDependencies():
+				plugin.setDependency(pluginName, self.plugins[name])
+		
 
 ##~ client.RegisterHandler('message', logHandler.messageHandler)
 #client.RegisterHandler('presence', logHandler.presenceHandler)
@@ -89,9 +128,9 @@ class Pyrefly(object):
 #client.RegisterHandler('presence', pyrefight.presHandler)
 
 if __name__ == '__main__':
-  pyrefly = Pyrefly()
-  try:
-    while pyrefly.process():
-      pass
-  except KeyboardInterrupt:
-    exit(0)
+	pyrefly = Pyrefly()
+	try:
+		while pyrefly.process():
+			pass
+	except KeyboardInterrupt:
+		exit(0)

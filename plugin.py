@@ -16,19 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-class Handler(object):
+import handler
+
+class Plugin(handler.Handler):
 	
-	def onRegister(self):
+	def getDependencies(self):
+		return tuple()
+
+	def onLoad(self):
 		pass
-	
-	def onUnregister(self):
-		pass
-		
-	def onRoster(self):
-		pass
-		
-	def onMessage(self):
-		pass
-	
-	def onPresence(self):
+
+	def onUnload(self):
 		pass

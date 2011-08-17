@@ -16,19 +16,20 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-class Handler(object):
+import handler
+
+class CoreHandler(handler.Handler):
 	
-	def onRegister(self):
-		pass
+	def __init__(self, bot):
+		self.bot = bot
 	
-	def onUnregister(self):
-		pass
-		
-	def onRoster(self):
-		pass
-		
-	def onMessage(self):
-		pass
-	
-	def onPresence(self):
-		pass
+	def onMessage(self, client, message):
+		if not message[0] == '!':
+			return
+		args = message.split(' ')
+		if args[0] == '!load' and args.length == 2:
+			bot.loadPlugin(args[1])
+		elif args[0] == '!unload' and args.length == 2:
+			bot.unloadPlugin(args[2])
+		elif args[0] == '!reload' and args.length == 2:
+			bot.reloadPlugin(args[3])
