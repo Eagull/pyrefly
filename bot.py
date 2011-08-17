@@ -32,6 +32,7 @@ class Pyrefly(object):
     self.config = config
     self.jid = xmpp.JID(config.get('id'))
     self.client = xmpp.Client(self.jid.getDomain(), debug=[])
+    self.handlers = list()
   
   def connect(self):
     connResult = self.client.connect()
@@ -59,11 +60,22 @@ class Pyrefly(object):
   def process(self, timeout=0.1):
     return self.client.Process(timeout)
     
-  def onPresence(self):
-    pass
+  def onPresence(self, *args, **kwargs):
+    for handler in self.handlers:
+      handler.onPresence(*args, **kwargs)
   
-  def onMessage(self):
+  def onMessage(self, *args, **kwargs):
+    for handler in self.handlers:
+      handler.onMessage(*args, **kwargs)
+    
+  def onRoster(self, *args, **kwargs):
+    for handler in self.handlers:
+      handler.onRoster(*args, **kwargs)
     pass
+    
+  def registerHandler(self, handler):
+    handler.onRegister()
+    self.handlers.append(handler)
 
 ##~ client.RegisterHandler('message', logHandler.messageHandler)
 #client.RegisterHandler('presence', logHandler.presenceHandler)

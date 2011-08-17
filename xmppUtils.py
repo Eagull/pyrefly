@@ -19,9 +19,12 @@ along with this program.	If not, see <http://www.gnu.org/licenses/>.
 from xmpp.protocol import NS_MUC_USER, Iq, NS_MUC_ADMIN, JID
 import xmpp
 
-class XmppUtil(object):
+import handler
+
+class XmppUtil(handler.Handler):
   
   def __init__(self, client):
+    handler.Handler.__init__(self)
     self.client = client
     self.myNick = dict()
     self.rosters = dict()
@@ -64,75 +67,83 @@ class XmppUtil(object):
     client.send(iq)
 
 
-def setAffiliation(room, nick, affiliation, reason=''):
-	iq = Iq('set', NS_MUC_ADMIN, {}, room)
-	item = iq.getTag('query').setTag('item')
-	item.setAttr('nick', nick)
-	item.setAttr('affiliation', affiliation)
-	if reason: item.addChild('reason', {}, reason)
-	client.send(iq)
+  def setAffiliation(self, muc, nick, affiliation, reason=''):
+	  iq = Iq('set', NS_MUC_ADMIN, {}, muc)
+	  item = iq.getTag('query').setTag('item')
+	  item.setAttr('nick', nick)
+	  item.setAttr('affiliation', affiliation)
+	  if reason:
+      item.addChild('reason', {}, reason)
+	  self.client.send(iq)
 
-def isModerator(muc, nick):
-	if not nick in rosters[muc]: return 0
-	return rosters[muc][nick][1] == 'moderator'
+  def isModerator(self, muc, nick):
+	  if not nick in self.rosters[muc]:
+      return False
+	  return self.rosters[muc][nick][1] == 'moderator'
 
-def isMember(muc, nick):
-	if not nick in rosters[muc]: return 0
-	return rosters[muc][nick][0] in ['member', 'admin', 'owner']
+  def isMember(self, muc, nick):
+	  if not nick in self.rosters[muc]:
+      return False
+	  return self.rosters[muc][nick][0] in ['member', 'admin', 'owner']
 
-def isAdmin(room, nick):
-	if not nick in rosters[room]: return 0
-	return rosters[room][nick][0] in ['admin', 'owner']
+  def isAdmin(self, muc, nick):
+	  if not nick in self.rosters[muc]:
+      return False
+	  return self.rosters[muc][nick][0] in ['admin', 'owner']
 
-def isOwner(room, nick):
-	if not nick in rosters[room]: return 0
-	return rosters[room][nick][0] == 'owner'
+  def isOwner(self, muc, nick):
+	  if not nick in self.rosters[muc]:
+      return False
+  	return self.rosters[muc][nick][0] == 'owner'
 
-def rosterHandler(sess, pres):
-	nick = pres.getFrom().getResource()
-	muc = pres.getFrom().getStripped()
-
-	# if not from one of the joined MUCs, return
-	if not muc in nicks:
-		return
-
-	if pres.getType() == 'unavailable':
-		if nick in rosters[muc]:
-			x = pres.getTag('x', {}, NS_MUC_USER)
-			item = x.getTag('item')
-			status = x.getTag('status')
-			if status and status.getAttr('code') == '303':
-				newnick = item.getAttr('nick')
-				#print 'DEBUG: '+nick+' is now known as '+newnick
-				rosters[muc][newnick] = rosters[muc][nick]
-
-				if nicks[muc] == nick: nicks[muc] = newnick
-				#print 'DEBUG: myself, '+nick+' is now known as '+newnick
-
-			del rosters[muc][nick]
-	else:
-		status = 'online'
-		show = pres.getTag('show')
-		if show: status = show.getData()
-		statusnode = pres.getTag('status')
-		if statusnode:
-			msg = statusnode.getData()
-			p = msg.find('\n')
-			if p != -1: msg = msg[:p] + ' [...]'
-			if len(msg) > 70: msg = msg[:64] + ' [...]'
-			status += ' (' + msg + ')'
-
-		if nick in rosters[muc]:
-			rosters[muc][nick][3] = status
-
-		x = pres.getTag('x', {}, NS_MUC_USER)
-		item = x.getTag('item')
-		if item:
-			aff = item.getAttr('affiliation')
-			role = item.getAttr('role')
-			jid = item.getAttr('jid')
-
-			rosters[muc][nick] = [aff, role, jid, status]
-
-		if nick == nicks[muc]:
-			if muc in joining: joining.remove(muc)
+  def onRoster(self, sess, pres):
+  	nick = pres.getFrom().getResource()
+  	muc = pres.getFrom().getStripped()
+  
+  	# if not from one of the joined MUCs, return
+  	if not muc in self.nicks:
+  		return
+  
+  	if pres.getType() == 'unavailable':
+  		if nick in self.rosters[muc]:
+  			x = pres.getTag('x', {}, NS_MUC_USER)
+  			item = x.getTag('item')
+  			status = x.getTag('status')
+  			if status and status.getAttr('code') == '303':
+  				newNick = item.getAttr('nick')
+  				#print 'DEBUG: '+nick+' is now known as '+newnick
+  				self.rosters[muc][newNick] = self.rosters[muc][nick]
+          if nick != newNick:
+            del self.rosters[muc][nick]
+  
+  				if self.nicks[muc] == nick:
+            self.nicks[muc] = newNick
+  				#print 'DEBUG: myself, '+nick+' is now known as '+newnick
+  
+  			del rosters[muc][nick]
+  	else:
+  		status = 'online'
+  		show = pres.getTag('show')
+  		if show: status = show.getData()
+  		statusnode = pres.getTag('status')
+  		if statusnode:
+  			msg = statusnode.getData()
+  			p = msg.find('\n')
+  			if p != -1: msg = msg[:p] + ' [...]'
+  			if len(msg) > 70: msg = msg[:64] + ' [...]'
+  			status += ' (' + msg + ')'
+  
+  		if nick in rosters[muc]:
+  			rosters[muc][nick][3] = status
+  
+  		x = pres.getTag('x', {}, NS_MUC_USER)
+  		item = x.getTag('item')
+  		if item:
+  			aff = item.getAttr('affiliation')
+  			role = item.getAttr('role')
+  			jid = item.getAttr('jid')
+  
+  			rosters[muc][nick] = [aff, role, jid, status]
+  
+  		if nick == nicks[muc]:
+  			if muc in joining: joining.remove(muc)
