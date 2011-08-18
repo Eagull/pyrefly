@@ -47,7 +47,7 @@ class Pyrefly(object):
 		if not connResult:
 			print "Error authenticating user: %s" % jid.getNode()
 			exit(3)
-		
+
 	def joinConfiguredRooms(self):
 		self.client.sendInitPresence()
 		self.client.RegisterHandler('presence', self.onPresence)
@@ -55,25 +55,25 @@ class Pyrefly(object):
 	
 		for room in config.getRoomList():
 			self.join(room, config.get('nick', room))
-	
+
 	def join(self, room, nick):
 		self.xmppUtil.joinMUC(nick, room)
-	
+
 	def process(self, timeout=0.1):
 		return self.client.Process(timeout)
-		
+
 	def onPresence(self, *args, **kwargs):
 		for handler in self.handlers:
 			handler.onPresence(*args, **kwargs)
-	
+
 	def onMessage(self, *args, **kwargs):
 		for handler in self.handlers:
 			handler.onMessage(*args, **kwargs)
-		
+
 	def onRoster(self, *args, **kwargs):
 		for handler in self.handlers:
 			handler.onRoster(*args, **kwargs)
-		
+
 	def registerHandler(self, handler):
 		handler.onRegister()
 		self.handlers.append(handler)

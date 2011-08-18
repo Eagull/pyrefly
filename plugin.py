@@ -20,11 +20,16 @@ import handler
 
 class Plugin(handler.Handler):
 	
+	def __init__(self):
+		handler.Handler.__init__(self)
+		self.bot = None
+
 	def getDependencies(self):
 		return tuple()
 
-	def onLoad(self):
-		pass
+	def onLoad(self, bot):
+		self.bot = bot
+		self.bot.registerHandler(self)
 
 	def onUnload(self):
-		pass
+		self.bot.unregisterHandler(self)
