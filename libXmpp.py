@@ -51,16 +51,29 @@ class Client(object):
 		muc.sendPresence(password)
 		
 		return muc
+	
+	def onRoster(self, session, presence):
+		jid = presence.getFrom()
+		mucId = jid.getStripped()
+		lMucId = mucId.lower()
+		
+		if not lMucId in self.mucs:
+			return
+		
+		self.mucs[lMucId].onRoster(presence)
+		
 		
 class Muc(object):
 
 	def __init__(self, client, name, nick):
+		self.client = client
 		self.name = name
 		self.nick = nick
-		self.manager = manager
-		self.bot = bot
 		
 		self.roomId = "%s/%s" % (name, nick)
+		self.jid = JID(self.roomId)
+		self.mucId = self.jid.getStripped()
+		self.roster = {}
 	
 	def sendPresence(self, password):
 		presence = xmpp.Presence(to=self.roomId)
@@ -69,8 +82,71 @@ class Muc(object):
 		x.addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
 
 		self.client.client.sendPresence(presence)
+	
+	def sendMessage(self, body):
+		message = xmpp.protocol.Message(to=self.mucId, body=body, type='groupchat')
+		self.client.client.send(message)
+	
+	def onRoster(self, presence):
+		nick = presence.getFrom().getResource()
 		
+		if presence.getType() == 'unavailable':
+			if nick not in self.roster:
+				return
+			
+			# Either they are changing nicks, or leaving.
+			x = presence.getTag(x, {}, NS_MUC_USER)
+			item = x.getTag('item')
+			status = x.getTag('status')
+			
+			if status and status.getAttr('code') == '303':
+				newNick = item.getAttr('nick')
+				if newNick == nick:
+					return
+				
+				user = self.roster[nick]
+				user.updateNick(newNick)
+				del self.roster[nick]
+				self.roster[newNick] = user
+			else:
+				# Seems like this user was deleted.
+				del self.roster[nick]
+		else:
+			if nick in self.roster:
+				
+			self.roster[nick] = self.userFromPresence(nick, presence)
+			pass
+		
+	def userFromPresence(self, nick, presence):
+		status = self.statusFromPresence(presence)
+	
 class User(object):
 	
 	def __init__(self, muc, nick):
+		self.muc = muc
+		self.nick = nick
+		self.jid = JID("%s/%s" % (muc, nick))
 		
+		self.affiliation = ''
+		self.status = 'online'
+		self.role = role
+		
+	def updateFromPresence(self, presence):
+		status = self.statusFromPresence(presence)
+		if status:
+			self.status = status
+		
+		
+		
+	def statusFromPresence(self, presence):
+		statusMsg = 'online'
+		show = presence.getTag('show')
+		if show:
+			statusMsg = show.getData()
+		
+		status = pres.getTag('status')
+		if status:
+			pass
+			
+		return statusMsg
+			
