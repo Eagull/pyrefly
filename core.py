@@ -16,11 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import handler
+from handler import Handler
 
-class CoreHandler(handler.Handler):
+class CoreHandler(Handler):
 	
 	def __init__(self, bot):
+		Handler.__init__(self)
 		self.bot = bot
 	
 	def onMessage(self, client, message):
