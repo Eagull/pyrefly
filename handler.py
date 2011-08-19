@@ -18,17 +18,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 class Handler(object):
 	
-	def onRegister(self):
+	def onMucJoin(self, muc, user):
 		pass
 	
-	def onUnregister(self):
-		pass
-		
-	def onRoster(self):
-		pass
-		
-	def onMessage(self):
+	def onMucPart(self, muc, user):
 		pass
 	
-	def onPresence(self):
+	def onMucNickChange(self, muc, user, oldNick):
+		pass
+	
+	def onMucMessage(self, muc, user, message, jid=None):
 		pass

@@ -20,6 +20,7 @@ from handler import Handler
 from xmpp.protocol import NS_MUC_USER, Iq, NS_MUC_ADMIN, JID
 import xmpp
 
+
 class Client(object):
 
 	def __init__(self, bot, strJid):
@@ -27,6 +28,7 @@ class Client(object):
 		self.jid = xmpp.Jid(strJid)
 		self.client = xmpp.Client(self.jid.getDomain(), debug=[])
 		self.client.RegisterHandler('presence', self.onRoster)
+		self.client.RegisterHandler('message', self.onMessage)
 		self.mucs = {}
 		self.handlers = []
 	
