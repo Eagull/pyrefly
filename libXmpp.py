@@ -28,6 +28,7 @@ class Client(object):
 		self.client = xmpp.Client(self.jid.getDomain(), debug=[])
 		self.client.RegisterHandler('presence', self.onRoster)
 		self.mucs = {}
+		self.handlers = []
 	
 	def connect(self, password, resource):
 		res = self.client.connect()
@@ -53,6 +54,37 @@ class Client(object):
 		
 		return muc
 	
+	def emitMucJoin(self, muc, user):
+		for handler in self.handlers:
+			handler.onMucJoin(muc, user)
+	
+	def emitMucPart(self, muc, user):
+		for handler in self.handlers:
+			handler.onMucPart(muc, user)
+		
+	def emitMucNickChange(self, muc, user, oldNick):
+		for handler in self.handlers:
+			handler.onMucNickChange(muc, user, oldNick)
+	
+	def onMessage(self, sender, message):
+		mucName = sender.getStripped()
+		lMucName = mucName.lower()
+		nick = sender.getResource()
+		
+		if lMucName not in self.mucs:
+			return
+		
+		muc = self.mucs[lMucName]
+		
+		# Suppress messages send by this bot itself.
+		if nick == muc.getNick():
+			return
+		
+		user = muc.getUser(nick)
+		
+		for handler in self.handlers:
+			handler.onMucMessage(muc, user, message, jid=sender)
+	
 	def onRoster(self, session, presence):
 		jid = presence.getFrom()
 		mucId = jid.getStripped()
@@ -76,8 +108,13 @@ class Muc(object):
 		self.mucId = self.jid.getStripped()
 		self.roster = {}
 	
-	def getId():
+	def getId(self):
 		return self.mucId
+		
+	def getUser(self, nick):
+		if nick not in self.roster:
+			return None
+		return self.roster[nick]
 	
 	def sendPresence(self, password):
 		presence = xmpp.Presence(to=self.roomId)
@@ -116,8 +153,10 @@ class Muc(object):
 				self.roster[newNick] = user
 				if nick == self.nick:
 					self.nick = nick
+				self.client.emitMucNickChange(self, user, nick)
 			else:
 				# Seems like this user was deleted.
+				self.client.emitMucPart(self, self.roster[nick])
 				del self.roster[nick]
 		else:
 			if nick in self.roster:
@@ -125,6 +164,7 @@ class Muc(object):
 				user.updateFromPresence(nick, presence)
 			else:
 				self.roster[nick] = self.userFromPresence(nick, presence)
+				self.client.emitMucJoin(self, self.roster[nick])
 			pass
 		
 	def userFromPresence(self, nick, presence):
@@ -190,4 +230,3 @@ class User(object):
 			pass
 			
 		return statusMsg
-			
