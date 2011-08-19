@@ -26,6 +26,7 @@ class Client(object):
 		self.bot = bot
 		self.jid = xmpp.Jid(strJid)
 		self.client = xmpp.Client(self.jid.getDomain(), debug=[])
+		self.client.RegisterHandler('presence', self.onRoster)
 		self.mucs = {}
 	
 	def connect(self, password, resource):
@@ -75,6 +76,9 @@ class Muc(object):
 		self.mucId = self.jid.getStripped()
 		self.roster = {}
 	
+	def getId():
+		return self.mucId
+	
 	def sendPresence(self, password):
 		presence = xmpp.Presence(to=self.roomId)
 		x = presence.setTag('x', namespace=xmpp.NS_MUC)
@@ -94,7 +98,9 @@ class Muc(object):
 			if nick not in self.roster:
 				return
 			
-			# Either they are changing nicks, or leaving.
+			user = self.roster[nick]
+			
+			# This unpleasantness checks for and handles nickname changes:
 			x = presence.getTag(x, {}, NS_MUC_USER)
 			item = x.getTag('item')
 			status = x.getTag('status')
@@ -104,39 +110,74 @@ class Muc(object):
 				if newNick == nick:
 					return
 				
-				user = self.roster[nick]
+				# nick -> newNick
 				user.updateNick(newNick)
 				del self.roster[nick]
 				self.roster[newNick] = user
+				if nick == self.nick:
+					self.nick = nick
 			else:
 				# Seems like this user was deleted.
 				del self.roster[nick]
 		else:
 			if nick in self.roster:
-				
-			self.roster[nick] = self.userFromPresence(nick, presence)
+				user = self.roster[nick]
+				user.updateFromPresence(nick, presence)
+			else:
+				self.roster[nick] = self.userFromPresence(nick, presence)
 			pass
 		
 	def userFromPresence(self, nick, presence):
-		status = self.statusFromPresence(presence)
+		return User(self, nick).updateFromPresence(nick, presence)
 	
+
 class User(object):
 	
 	def __init__(self, muc, nick):
 		self.muc = muc
 		self.nick = nick
-		self.jid = JID("%s/%s" % (muc, nick))
 		
 		self.affiliation = ''
 		self.status = 'online'
 		self.role = role
+		self.jid = ''
+	
+	def getNick(self):
+		return self.nick
+	
+	def getAffiliation(self):
+		return self.affiliation
+	
+	def getStatus(self):
+		return self.status
+	
+	def getRole(self):
+		return self.role
+	
+	def getJid(self):
+		return self.jid
+	
+	def setNick(self, nick):
+		self.nick = nick
 		
-	def updateFromPresence(self, presence):
+	def updateFromPresence(self, nick, presence):
 		status = self.statusFromPresence(presence)
 		if status:
 			self.status = status
 		
-		
+  		x = pres.getTag('x', {}, NS_MUC_USER)
+  		if not x:
+  			return self
+  		
+  		item = x.getTag('item')
+  		if not item:
+  			return self
+  		
+  		self.affiliation = item.getAttribute('affiliation')
+  		self.role = item.getAttribute('role')
+  		self.jid = item.getAttribute('jid')
+  		
+		return self
 		
 	def statusFromPresence(self, presence):
 		statusMsg = 'online'
