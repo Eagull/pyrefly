@@ -26,7 +26,7 @@ class Db(object):
 		self.email = email
 		self.password = password
 		self.spreadsheetId = spreadsheetId
-		self.table_map = {}
+		self.tableMap = {}
 		
 	def connect(self):
 		self.client = gdata.spreadsheet.service.SpreadsheetsService()
@@ -36,27 +36,72 @@ class Db(object):
 		self.client.ProgrammaticLogin()
 	
 	def openTable(self, tableName, worksheetId):
-		self.table_maps[tableName] = worksheetId
-		self.table_feeds[tableName] = self.client.GetListFeed(self.spreadsheetId, worksheetId)
+		self.tableMap[tableName] = worksheetId
 	
-	def get(self, table, kvMap):
-		if not table in self.table_map:
+	def query(self, table, kvMap):
+		if not table in self.tableMap:
 			return None
 		queryText = " and ".join(["%s=\"%s\"" % (k, v) for k, v in kvMap])
-		worksheetId = self.table_map[table]
-		feed = self.client.GetListFeed(self.spreadsheetId, worksheetId, query=q)
+		worksheetId = self.tableMap[table]
 		q = self.client.ListQuery()
 		q.sq = queryText
+		return self.client.GetListFeed(self.spreadsheetId, worksheetId, query=q)
 		
-		
-	def put(self, table, kvMap):
-		pass
+	def get(self, table, kvMap):
+		feed = self.query(table, kvMap)
+		if not feed:
+			return []
+		results = []
+		for entry in feed.entries:
+			results.push(dict((k, v) for k, v in entry.custom))
+		return results
 	
+	def getOne(self, table, kvMap):
+		results = self.get(table, kvMap)
+		if len(results) == 0:
+			return None
+		return results[0]
+		
+	def put(self, table, vMap):
+		if not table in self.tableMap[table]:
+			return False
+		
+		worksheetId = self.tableMap[table]
+		
+		entry = self.client.InsertRow(vMap, self.spreadsheetId self.tableMap[table]
+		return isinstance(entry, gdata.spreadsheet.SpreadsheetsList)
+
 	def update(self, table, kvMap, vMap):
-		pass
-	
-	def delete(self, table, keyName):
-		pass
+		if not table in self.tableMap:
+			return False
+		
+		feed = self.query(table, kvMap)
+		if not feed:
+			return False
+		
+		updateCount = 0
+		for entry in feed.entries:
+			updatedEntry = self.client.UpdateRow(entry, vMap)
+			if isinstance(updatedEntry, gdata.spreadsheet.SpreadsheetsList):
+				updateCount++
+		
+		return updateCount
+		
+	def delete(self, table, kvMap):
+		if not table in self.tableMap:
+			return False
+		
+		feed = self.query(table, kvMap)
+		if not feed:
+			return False
+		
+		deleteCount = 0
+		for entry in feed.entries:
+			self.client.DeleteRow(entry)
+			deleteCount++
+		
+		return deleteCount
+		
 	
 class Table(object):
 	
@@ -67,5 +112,11 @@ class Table(object):
 	def get(self, kvMap):
 		return self.db.get(self.table, kvMap)
 	
-	def put(self, table, kvMap):
-		
+	def getOne(self, kvMap):
+		return self.db.getOne(self.table, kvMap)
+	
+	def update(self, kvMap, vMap):
+		return 
+	
+	def put(self, vMap):
+		return self.db.put(self.table, kVMap)
