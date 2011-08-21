@@ -53,7 +53,7 @@ class Client(object):
 		if lMucName in self.mucs:
 			return self.mucs[lMucName]
 		
-		muc = Muc(self, name, nick)
+		muc = Muc(self, mucName, nick)
 		self.mucs[lMucName] = muc
 		muc.sendPresence(password)
 		
@@ -71,7 +71,8 @@ class Client(object):
 		for handler in self.handlers:
 			handler.onMucNickChange(muc, user, oldNick)
 	
-	def onMessage(self, sender, message):
+	def onMessage(self, session, message):
+		sender = message.getFrom()
 		mucName = sender.getStripped()
 		lMucName = mucName.lower()
 		nick = sender.getResource()
@@ -88,7 +89,7 @@ class Client(object):
 		user = muc.getUser(nick)
 		
 		for handler in self.handlers:
-			handler.onMucMessage(muc, user, message, jid=sender)
+			handler.onMucMessage(muc, user, message.getBody(), jid=sender)
 	
 	def onRoster(self, session, presence):
 		jid = presence.getFrom()
@@ -121,13 +122,16 @@ class Muc(object):
 			return None
 		return self.roster[nick]
 	
+	def getNick(self):
+		return self.nick
+	
 	def sendPresence(self, password):
 		presence = xmpp.Presence(to=self.roomId)
 		x = presence.setTag('x', namespace=xmpp.NS_MUC)
 		x.setTagData('password', password)
 		x.addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
 
-		self.client.client.sendPresence(presence)
+		self.client.client.send(presence)
 	
 	def sendMessage(self, body):
 		message = xmpp.protocol.Message(to=self.mucId, body=body, type='groupchat')
@@ -184,7 +188,7 @@ class User(object):
 		
 		self.affiliation = ''
 		self.status = 'online'
-		self.role = role
+		self.role = ''
 		self.jid = ''
 	
 	def getNick(self):
@@ -210,7 +214,7 @@ class User(object):
 		if status:
 			self.status = status
 		
-  		x = pres.getTag('x', {}, NS_MUC_USER)
+  		x = presence.getTag('x', {}, NS_MUC_USER)
   		if not x:
   			return self
   		
@@ -218,9 +222,9 @@ class User(object):
   		if not item:
   			return self
   		
-  		self.affiliation = item.getAttribute('affiliation')
-  		self.role = item.getAttribute('role')
-  		self.jid = item.getAttribute('jid')
+  		self.affiliation = item.getAttr('affiliation')
+  		self.role = item.getAttr('role')
+  		self.jid = item.getAttr('jid')
   		
 		return self
 		
@@ -230,7 +234,7 @@ class User(object):
 		if show:
 			statusMsg = show.getData()
 		
-		status = pres.getTag('status')
+		status = presence.getTag('status')
 		if status:
 			pass
 			
