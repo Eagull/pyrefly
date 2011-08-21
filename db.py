@@ -18,9 +18,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import gdata.spreadsheet.service
 
-
+# Implements a basic non-ACID database against a Google Spreadsheet document.
 class Db(object):
 	
+	# Initialize the database with the given nickname, account, and spreadsheet.
 	def __init__(self, nick, email, password, spreadsheetId):
 		self.nick = nick
 		self.email = email
@@ -29,28 +30,32 @@ class Db(object):
 		self.tableIdMap = {}
 		self.tableMap = {}
 		
+	# Connect and log in to Google Spreadsheet service.
 	def connect(self):
 		self.client = gdata.spreadsheet.service.SpreadsheetsService()
 		self.client.email = self.email
 		self.client.password = self.password
 		self.client.source = self.nick
 		self.client.ProgrammaticLogin()
-		self.buildTableMap()
+		self._buildTableMap()
 	
-	def buildTableMap(self):
+	# Query and build a map of "tables" (worksheets) to worksheet ids.
+	def _buildTableMap(self):
 		feed = self.client.GetWorksheetsFeed(self.spreadsheetId)
 		for entry in feed.entry:
 			table = entry.title.text.lower()
 			self.tableIdMap[table] = entry.id.text.rsplit('/', 1)[1]
 			self.tableMap[table] = Table(self, table)
 	
+	# Get a Table object for the given table name.
 	def table(self, tableName):
 		tableName = tableName.lower()
 		if not tableName in self.tableMap:
 			return None
 		return self.tableMap[tableName]
 	
-	def query(self, table, kvMap):
+	# Run a query against the database (filtered by the given kvMap), and return a result feed.
+	def _query(self, table, kvMap):
 		table = table.lower()
 		if not table in self.tableIdMap:
 			return None
@@ -63,9 +68,10 @@ class Db(object):
 		q.sq = queryText
 		return self.client.GetListFeed(self.spreadsheetId, worksheetId, query=q)
 		
+	# Query the given table with the given filter and return a list of results.
 	def get(self, table, kvMap):
 		table = table.lower()
-		feed = self.query(table, kvMap)
+		feed = self._query(table, kvMap)
 		if not feed:
 			return []
 		results = []
@@ -73,13 +79,29 @@ class Db(object):
 			results.append(dict((v.column, v.text) for v in entry.custom.values()))
 		return results
 	
+	# Query the given table with the given filter and return the first result.
 	def getOne(self, table, kvMap):
 		table = table.lower()
+		if not table in self.tableIdMap:
+			return None
 		results = self.get(table, kvMap)
 		if len(results) == 0:
 			return None
 		return results[0]
-		
+	
+	# Query the given table and return a list of all rows.
+	def getAll(self, table):
+		table = table.lower()
+		if not table in self.tableIdMap:
+			return None
+		worksheetId = self.tableIdMap[table]
+		feed = self.client.GetListFeed(self.spreadsheetId, worksheetId)
+		results = []
+		for entry in feed.entry:
+			results.append(dict((v.column, v.text) for v in entry.custom.values()))
+		return results
+	
+	# Insert a row to the given table.
 	def put(self, table, vMap):
 		table = table.lower()
 		if not table in self.tableIdMap:
@@ -90,12 +112,13 @@ class Db(object):
 		entry = self.client.InsertRow(vMap, self.spreadsheetId, self.tableIdMap[table])
 		return isinstance(entry, gdata.spreadsheet.SpreadsheetsList)
 
+	# Update rows which match the filter in the given table with a set of changes.
 	def update(self, table, kvMap, vMap):
 		table = table.lower()
 		if not table in self.tableIdMap:
 			return False
 		
-		feed = self.query(table, kvMap)
+		feed = self._query(table, kvMap)
 		if not feed:
 			return False
 		
@@ -112,12 +135,13 @@ class Db(object):
 		
 		return updateCount
 		
+	# Delete rows that match a filter in the given table
 	def delete(self, table, kvMap):
 		table = table.lower()
 		if not table in self.tableIdMap:
 			return False
 		
-		feed = self.query(table, kvMap)
+		feed = self._query(table, kvMap)
 		if not feed:
 			return False
 		
@@ -128,7 +152,7 @@ class Db(object):
 		
 		return deleteCount
 		
-	
+
 class Table(object):
 	
 	def __init__(self, db, table):
@@ -140,6 +164,9 @@ class Table(object):
 	
 	def getOne(self, kvMap):
 		return self.db.getOne(self.table, kvMap)
+	
+	def getAll(self):
+		return self.db.getAll(self.table)
 	
 	def update(self, kvMap, vMap):
 		return self.db.update(self.table, kvMap, vMap)

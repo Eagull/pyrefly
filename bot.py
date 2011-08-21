@@ -41,17 +41,15 @@ class Pyrefly(object):
 		if not result:
 			print "Error connecting: %s" % err
 			exit(1)
-		
-	def joinConfiguredRooms(self):
-		self.client.sendInitPresence()
-		self.client.RegisterHandler('presence', self.onPresence)
-		self.client.RegisterHandler('message', self.onMessage)
-	
-		for room in config.getRoomList():
-			self.join(room, config.get('nick', room))
 
-	def join(self, room, nick):
-		self.xmppUtil.joinMUC(nick, room)
+	def initialize(self):
+		mucTable = self.db.table('muc')
+		toJoin = mucTable.get({'autojoin': 'y'})
+		for mucToJoin in toJoin:
+			self.join(mucToJoin['muc'], mucToJoin['nick'], mucToJoin['password'])
+	
+	def join(self, muc, nick, password=''):
+		return self.client.join(muc, nick, password=password)
 
 	def process(self, timeout=0.1):
 		self.client.process(timeout=timeout)
@@ -125,6 +123,7 @@ class Pyrefly(object):
 if __name__ == '__main__':
 	pyrefly = Pyrefly(config)
 	pyrefly.connect()
+	pyrefly.initialize()
 	try:
 		while pyrefly.process():
 			pass
