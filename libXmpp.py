@@ -76,6 +76,7 @@ class Client(object):
 		mucName = sender.getStripped()
 		lMucName = mucName.lower()
 		nick = sender.getResource()
+		print "XMPP: <%s/%s> %s" % (mucName, nick, message.getBody())
 		
 		if lMucName not in self.mucs:
 			return
@@ -100,6 +101,12 @@ class Client(object):
 			return
 		
 		self.mucs[lMucId].onRoster(presence)
+	
+	def addHandler(self, handler):
+		self.handlers.append(handler)
+	
+	def removeHandler(self, handler):
+		self.handlers.remove(handler)
 		
 		
 class Muc(object):
@@ -134,7 +141,7 @@ class Muc(object):
 		self.client.client.send(presence)
 	
 	def sendMessage(self, body):
-		message = xmpp.protocol.Message(to=self.mucId, body=body, type='groupchat')
+		message = xmpp.protocol.Message(to=self.mucId, body=body, typ='groupchat')
 		self.client.client.send(message)
 	
 	def onRoster(self, presence):
