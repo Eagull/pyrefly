@@ -16,23 +16,21 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from handler import Handler
+from plugin import Plugin
 
-class Plugin(Handler):
+class Echo(Plugin):
 	
 	def __init__(self):
-		Handler.__init__(self)
-		self.bot = None
-
-	def getDependencies(self):
-		return tuple()
+		Plugin.__init__(self)
 	
-	def setDependency(self, name, dep):
-		pass
-
 	def onLoad(self, bot):
-		self.bot = bot
-		self.bot.registerHandler(self)
+		Plugin.onLoad(self, bot)
 
 	def onUnload(self):
-		self.bot.unregisterHandler(self)
+		Plugin.onUnload(self)
+	
+	def onMucMessage(self, muc, client, message, jid=None):
+		if client is None:
+			return
+
+		muc.sendMessage("<%s> %s" % (client.getNick(), message))

@@ -19,21 +19,33 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #import xmpp
 import config
 
-import libXmpp, db
+from db import Db
+from core import Core
+from libXmpp import Client
+from handler import Handler
+import sys, os
 #from handlers import commandHandler, logHandler, fightHandler, swearHandler, replyHandler
 #import pyrefight
 #import dictionary
 
 # TODO: add SIGINT and exit handlers
 
-class Pyrefly(object):
+class Pyrefly(Handler):
 
 	def __init__(self, config):
 		self.config = config
-		self.client = libXmpp.Client(self.config.get('id'))
-		self.db = db.Db('pyrefly', self.config.get('account', 'db'), self.config.get('password', 'db'), self.config.get('spreadsheet', 'db'))
+		self.client = Client(self.config.get('id'))
+		self.client.addHandler(self)
+		self.db = Db('pyrefly', self.config.get('account', 'db'), self.config.get('password', 'db'), self.config.get('spreadsheet', 'db'))
 		self.plugins = {}
 		self.pluginModules = {}
+		self.handlers = [Core(self)]
+
+		# Set up the import path for plugins
+		myPath = os.path.abspath(__file__)
+		pluginPath = "%s/plugins" % myPath.rsplit('/', 1)[0]
+		print "Path for plugins is: %s" % pluginPath
+		sys.path.append(pluginPath)
 	
 	def connect(self):
 		self.db.connect()
@@ -46,7 +58,10 @@ class Pyrefly(object):
 		mucTable = self.db.table('muc')
 		toJoin = mucTable.get({'autojoin': 'y'})
 		for mucToJoin in toJoin:
-			self.join(mucToJoin['muc'], mucToJoin['nick'], mucToJoin['password'])
+			muc = self.join(mucToJoin['muc'], mucToJoin['nick'], password=mucToJoin['password'])
+			if muc is not None:
+				muc.data = mucToJoin
+
 	
 	def join(self, muc, nick, password=''):
 		return self.client.join(muc, nick, password=password)
@@ -55,58 +70,87 @@ class Pyrefly(object):
 		self.client.process(timeout=timeout)
 		return True
 
-	def onPresence(self, *args, **kwargs):
+	def onMucMessage(self, *args, **kwargs):
 		for handler in self.handlers:
-			handler.onPresence(*args, **kwargs)
-
-	def onMessage(self, *args, **kwargs):
-		for handler in self.handlers:
-			handler.onMessage(*args, **kwargs)
-
-	def onRoster(self, *args, **kwargs):
-		for handler in self.handlers:
-			handler.onRoster(*args, **kwargs)
+			handler.onMucMessage(*args, **kwargs)
 
 	def registerHandler(self, handler):
-		handler.onRegister()
 		self.handlers.append(handler)
 	
 	def unregisterHandler(self, handler):
-		handler.onUnregister()
 		self.handlers.remove(handler)
 
 	def loadPlugin(self, name):
-		name = "plugin.%s"
 		if name in self.plugins:
-			return False
-		self.pluginModules[name] = __import__(name)
+			return (False, "Plugin %s is already loaded" % name)
+		source = None
+		if name in self.pluginModules:
+			source = "reloaded"
+			reload(self.pluginModules[name])
+		else:
+			importName = name.lower()
+			source = "imported"
+			try:
+				self.pluginModules[name] = __import__(importName, globals(), locals(), [], 0)
+			except ImportError:
+				return (False, "No such module: %s" % importName)
+			
 		if not self.pluginModules[name]:
+			print "import failed!"
 			del self.pluginModules[name]
-			return False
-		clazz = self.pluginModules[name][name]
+			return (False, "Module not defined after import")
+		print "Imported: %s" % self.pluginModules[name]
+
+		try:
+			clazz = getattr(self.pluginModules[name], name)
+		except AttributeError:
+			return (False, "Module has no class defined")
+
+		print "Class: %s" % clazz
+		if not clazz:
+			return (False, "Class not defined after import")
 		self.plugins[name] = clazz()
 		self.plugins[name].onLoad(self)
-		return True
+		return (True, source)
 		
 	def unloadPlugin(self, name):
-		for pluginName, plugin in self.plugins:
+		if name not in self.plugins:
+			return (False, None, "not loaded")
+
+		toUnload = []
+		unloaded = []
+		for pluginName, plugin in self.plugins.items():
 			if name in plugin.getDependencies():
-				self.unloadPlugin(pluginName)
+				toUnload.append(pluginName)
+
+		for pluginName in toUnload:
+			result, extraUnloaded, err = self.unloadPlugin(pluginName)
+			for unloadedName in extraUnloaded:
+				unloaded.append(unloadedName)
+			if not result:
+				return (False, unloaded, err)
+			unloaded.append(pluginName)
+
 		self.plugins[name].onUnload()
 		del self.plugins[name]
+		return (True, unloaded, None)
 	
 	def reloadPlugin(self, name):
-		if name not in self.pluginModules:
-			return False
+		if name not in self.plugins:
+			return (False, "Not loaded")
 		plugin = self.plugins[name]
 		plugin.onUnload()
 		reload(self.pluginModules[name])
-		clazz = self.pluginModules[name][name]
+		try:
+			clazz = getattr(self.pluginModules[name], name)
+		except AttributeError:
+			return (False, "Class no longer defined")
 		self.plugins[name] = clazz()
 		self.plugins[name].onLoad(self)
-		for pluginName, plugin in self.plugins:
+		for pluginName, plugin in self.plugins.items():
 			if name in plugin.getDependencies():
 				plugin.setDependency(pluginName, self.plugins[name])
+		return (True, None)
 		
 
 ##~ client.RegisterHandler('message', logHandler.messageHandler)
