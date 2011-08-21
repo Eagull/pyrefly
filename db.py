@@ -26,6 +26,7 @@ class Db(object):
 		self.email = email
 		self.password = password
 		self.spreadsheetId = spreadsheetId
+		self.tableIdMap = {}
 		self.tableMap = {}
 		
 	def connect(self):
@@ -34,45 +35,64 @@ class Db(object):
 		self.client.password = self.password
 		self.client.source = self.nick
 		self.client.ProgrammaticLogin()
+		self.buildTableMap()
 	
-	def openTable(self, tableName, worksheetId):
-		self.tableMap[tableName] = worksheetId
+	def buildTableMap(self):
+		feed = self.client.GetWorksheetsFeed(self.spreadsheetId)
+		for entry in feed.entry:
+			table = entry.title.text.lower()
+			self.tableIdMap[table] = entry.id.text.rsplit('/', 1)[1]
+			self.tableMap[table] = Table(self, table)
+	
+	def table(self, tableName):
+		tableName = tableName.lower()
+		if not tableName in self.tableMap:
+			return None
+		return self.tableMap[tableName]
 	
 	def query(self, table, kvMap):
-		if not table in self.tableMap:
+		table = table.lower()
+		if not table in self.tableIdMap:
 			return None
-		queryText = " and ".join(["%s=\"%s\"" % (k, v) for k, v in kvMap])
-		worksheetId = self.tableMap[table]
-		q = self.client.ListQuery()
+		queryCondList = []
+		for k, v in kvMap.items():
+			queryCondList.append("%s=\"%s\"" % (k, v))
+		queryText = " and ".join(queryCondList)
+		worksheetId = self.tableIdMap[table]
+		q = gdata.spreadsheet.service.ListQuery()
 		q.sq = queryText
 		return self.client.GetListFeed(self.spreadsheetId, worksheetId, query=q)
 		
 	def get(self, table, kvMap):
+		table = table.lower()
 		feed = self.query(table, kvMap)
 		if not feed:
 			return []
 		results = []
-		for entry in feed.entries:
-			results.push(dict((k, v) for k, v in entry.custom))
+		for entry in feed.entry:
+			results.append(dict((v.column, v.text) for v in entry.custom.values()))
 		return results
 	
 	def getOne(self, table, kvMap):
+		table = table.lower()
 		results = self.get(table, kvMap)
 		if len(results) == 0:
 			return None
 		return results[0]
 		
 	def put(self, table, vMap):
-		if not table in self.tableMap[table]:
+		table = table.lower()
+		if not table in self.tableIdMap:
 			return False
 		
-		worksheetId = self.tableMap[table]
+		worksheetId = self.tableIdMap[table]
 		
-		entry = self.client.InsertRow(vMap, self.spreadsheetId self.tableMap[table]
+		entry = self.client.InsertRow(vMap, self.spreadsheetId, self.tableIdMap[table])
 		return isinstance(entry, gdata.spreadsheet.SpreadsheetsList)
 
 	def update(self, table, kvMap, vMap):
-		if not table in self.tableMap:
+		table = table.lower()
+		if not table in self.tableIdMap:
 			return False
 		
 		feed = self.query(table, kvMap)
@@ -80,15 +100,21 @@ class Db(object):
 			return False
 		
 		updateCount = 0
-		for entry in feed.entries:
-			updatedEntry = self.client.UpdateRow(entry, vMap)
+		for entry in feed.entry:
+			updateMap = dict()
+			for v in entry.custom.values():
+				updateMap[v.column] = v.text
+			for k, v in vMap.items():
+				updateMap[k] = v
+			updatedEntry = self.client.UpdateRow(entry, updateMap)
 			if isinstance(updatedEntry, gdata.spreadsheet.SpreadsheetsList):
-				updateCount++
+				updateCount += 1
 		
 		return updateCount
 		
 	def delete(self, table, kvMap):
-		if not table in self.tableMap:
+		table = table.lower()
+		if not table in self.tableIdMap:
 			return False
 		
 		feed = self.query(table, kvMap)
@@ -96,9 +122,9 @@ class Db(object):
 			return False
 		
 		deleteCount = 0
-		for entry in feed.entries:
+		for entry in feed.entry:
 			self.client.DeleteRow(entry)
-			deleteCount++
+			deleteCount += 1
 		
 		return deleteCount
 		
@@ -107,7 +133,7 @@ class Table(object):
 	
 	def __init__(self, db, table):
 		self.db = db
-		self.table = table
+		self.table = table.lower()
 	
 	def get(self, kvMap):
 		return self.db.get(self.table, kvMap)
@@ -116,7 +142,10 @@ class Table(object):
 		return self.db.getOne(self.table, kvMap)
 	
 	def update(self, kvMap, vMap):
-		return 
+		return self.db.update(self.table, kvMap, vMap)
 	
 	def put(self, vMap):
-		return self.db.put(self.table, kVMap)
+		return self.db.put(self.table, vMap)
+	
+	def delete(self, kvMap):
+		return self.db.delete(self.table, kvMap)

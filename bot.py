@@ -16,13 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import xmpp
+#import xmpp
 import config
 
-import xmppUtils
-from handlers import commandHandler, logHandler, fightHandler, swearHandler, replyHandler
-import pyrefight
-import dictionary
+import libXmpp, db
+#from handlers import commandHandler, logHandler, fightHandler, swearHandler, replyHandler
+#import pyrefight
+#import dictionary
 
 # TODO: add SIGINT and exit handlers
 
@@ -30,24 +30,18 @@ class Pyrefly(object):
 
 	def __init__(self, config):
 		self.config = config
-		self.jid = xmpp.JID(config.get('id'))
-		self.client = xmpp.Client(self.jid.getDomain(), debug=[])
-		self.handlers = list()
+		self.client = libXmpp.Client(self.config.get('id'))
+		self.db = db.Db('pyrefly', self.config.get('account', 'db'), self.config.get('password', 'db'), self.config.get('spreadsheet', 'db'))
 		self.plugins = {}
 		self.pluginModules = {}
 	
 	def connect(self):
-		connResult = self.client.connect()
-		if not connResult:
-			print "Error connecting to server: %s" % jid.getDomain()
-			exit(2)
+		self.db.connect()
+		result, err = self.client.connect(self.config.get('password'), 'bot' + self.config.hash[:6])
+		if not result:
+			print "Error connecting: %s" % err
+			exit(1)
 		
-		resource = 'bot' + self.config.hash[:6]
-		connResult = self.client.auth(jid.getNode(), self.config.get('password'), resource)
-		if not connResult:
-			print "Error authenticating user: %s" % jid.getNode()
-			exit(3)
-
 	def joinConfiguredRooms(self):
 		self.client.sendInitPresence()
 		self.client.RegisterHandler('presence', self.onPresence)
@@ -60,7 +54,8 @@ class Pyrefly(object):
 		self.xmppUtil.joinMUC(nick, room)
 
 	def process(self, timeout=0.1):
-		return self.client.Process(timeout)
+		self.client.process(timeout=timeout)
+		return True
 
 	def onPresence(self, *args, **kwargs):
 		for handler in self.handlers:
@@ -128,7 +123,8 @@ class Pyrefly(object):
 #client.RegisterHandler('presence', pyrefight.presHandler)
 
 if __name__ == '__main__':
-	pyrefly = Pyrefly()
+	pyrefly = Pyrefly(config)
+	pyrefly.connect()
 	try:
 		while pyrefly.process():
 			pass

@@ -23,12 +23,9 @@ import xmpp
 
 class Client(object):
 
-	def __init__(self, bot, strJid):
-		self.bot = bot
-		self.jid = xmpp.Jid(strJid)
+	def __init__(self, strJid):
+		self.jid = xmpp.JID(strJid)
 		self.client = xmpp.Client(self.jid.getDomain(), debug=[])
-		self.client.RegisterHandler('presence', self.onRoster)
-		self.client.RegisterHandler('message', self.onMessage)
 		self.mucs = {}
 		self.handlers = []
 	
@@ -41,9 +38,15 @@ class Client(object):
 		if not res:
 			return (False, "Error authenticating as %s" % self.jid.getNode())
 		
+		self.client.RegisterHandler('presence', self.onRoster)
+		self.client.RegisterHandler('message', self.onMessage)
+
 		self.client.sendInitPresence()
 		
-		return (True)
+		return (True, None)
+	
+	def process(self, timeout=0.1):
+		self.client.Process(timeout)
 	
 	def join(self, mucName, nick, password=''):
 		lMucName = mucName.lower()
