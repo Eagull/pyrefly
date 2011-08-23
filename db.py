@@ -59,10 +59,7 @@ class Db(object):
 		table = table.lower()
 		if not table in self.tableIdMap:
 			return None
-		queryCondList = []
-		for k, v in kvMap.items():
-			queryCondList.append("%s=\"%s\"" % (k, v))
-		queryText = " and ".join(queryCondList)
+		queryText = " and ".join(["%s=\"%s\"" % (k, v) for k, v in self._clean(kvMap).items()])
 		worksheetId = self.tableIdMap[table]
 		q = gdata.spreadsheet.service.ListQuery()
 		q.sq = queryText
@@ -76,7 +73,7 @@ class Db(object):
 			return []
 		results = []
 		for entry in feed.entry:
-			results.append(dict((v.column, v.text) for v in entry.custom.values()))
+			results.append(self._unclean(dict((v.column, v.text) for v in entry.custom.values())))
 		return results
 	
 	# Query the given table with the given filter and return the first result.
@@ -98,7 +95,7 @@ class Db(object):
 		feed = self.client.GetListFeed(self.spreadsheetId, worksheetId)
 		results = []
 		for entry in feed.entry:
-			results.append(dict((v.column, v.text) for v in entry.custom.values()))
+			results.append(self._unclean(dict((v.column, v.text) for v in entry.custom.values())))
 		return results
 	
 	# Insert a row to the given table.
@@ -109,7 +106,7 @@ class Db(object):
 		
 		worksheetId = self.tableIdMap[table]
 		
-		entry = self.client.InsertRow(vMap, self.spreadsheetId, self.tableIdMap[table])
+		entry = self.client.InsertRow(self._clean(vMap), self.spreadsheetId, self.tableIdMap[table])
 		return isinstance(entry, gdata.spreadsheet.SpreadsheetsList)
 
 	# Update rows which match the filter in the given table with a set of changes.
@@ -129,7 +126,7 @@ class Db(object):
 				updateMap[v.column] = v.text
 			for k, v in vMap.items():
 				updateMap[k] = v
-			updatedEntry = self.client.UpdateRow(entry, updateMap)
+			updatedEntry = self.client.UpdateRow(entry, self._clean(updateMap))
 			if isinstance(updatedEntry, gdata.spreadsheet.SpreadsheetsList):
 				updateCount += 1
 		
@@ -151,6 +148,25 @@ class Db(object):
 			deleteCount += 1
 		
 		return deleteCount
+	
+	# Sanitize an input dictionary to avoid formula errors.
+	# TODO(alx): Base64 encode binary values so the database can store arbitrary info.
+	def _clean(self, vMap):
+		cleanMap = {}
+		for k, v in vMap.items():
+			if v[0:1] in [' ', '$', '@', '=', '<', '>']:
+				v = "@%s" % v
+			cleanMap[k] = v
+		return cleanMap
+	
+	# Un-sanitize a result from the DB before returning it.
+	def _unclean(self, vMap):
+		uncleanMap = {}
+		for k, v in vMap.items():
+			if v[0:1] == '@'
+				v = v[1:]
+			uncleanMap[k] = v
+		return uncleanMap
 		
 
 class Table(object):

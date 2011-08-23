@@ -246,3 +246,6 @@ class User(object):
 			pass
 			
 		return statusMsg
+	
+	def isMember(self):
+		return self.affiliation in ['member', 'admin', 'owner']

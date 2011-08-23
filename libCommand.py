@@ -71,3 +71,9 @@ class Command(object):
 		def respond(message):
 			muc.sendMessage(message)
 		self.handler(muc, client, args, respond)
+	
+	def accessGate(self, muc, client):
+		if self.access == 'member':
+			if not client.isMember():
+				return False
+		return True
