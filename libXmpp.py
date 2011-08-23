@@ -144,6 +144,16 @@ class Muc(object):
 		message = xmpp.protocol.Message(to=self.mucId, body=body, typ='groupchat')
 		self.client.client.send(message)
 	
+	def setRole(self, user, role, reason=None):
+		iqMap = {'role': role}
+		if reason is not None:
+			iqMap['reason'] = reason
+			
+		self.client.client.send(user.iq(iqMap))
+	
+	def setAffiliation(self, user, affiliation):
+		self.client.client.send(user.iq({'affiliation': affiliation}))
+	
 	def onRoster(self, presence):
 		nick = presence.getFrom().getResource()
 		
@@ -246,6 +256,38 @@ class User(object):
 			pass
 			
 		return statusMsg
+
+	def setRole(self, role):
+		self.muc.setRole(self, role, reason=reason)
+	
+	def setAffiliation(self, affiliation):
+		self.muc.setAffiliation(self, affiliation)
 	
 	def isMember(self):
 		return self.affiliation in ['member', 'admin', 'owner']
+	
+	def isModerator(self):
+		return self.role == 'moderator'
+	
+	def isAdmin(self):
+		return self.affiliation in ['admin', 'owner']
+	
+	def isOwner(self):
+		return self.affiliation == 'owner'
+	
+	def kick(self, reason):
+		self.setRole('none', reason=reason)
+	
+	def voice(self, reason=None):
+		self.setRole('participant', reason=reason)
+	
+	def devoice(self, reason=None):
+		self.setRole('visitor', reason=reason)
+	
+	def iq(self, attributes):
+		iq = xmpp.protocol.Iq('set', NS_MUC_ADMIN, {}, self.mucId)
+		item = iq.getTag('query').setTag('item')
+		item.setAttr('nick', self.nick)
+		for k, v in attributes.items():
+			item.setAttr(k, v)
+		return iq
