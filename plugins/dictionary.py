@@ -25,23 +25,35 @@ class Dictionary(Plugin):
 	def __init__(self):
 		Plugin.__init__(self)
 		self.dispatcher = Dispatcher()
-		self.dispatcher.define('define', self.cmdDefine, access='member', args=2)
+		self.dispatcher.define('define', self.cmdDefine, access='member', args=3)
+		self.dispatcher.define('forget', self.cmdForget, access='member', args=2)
 	
 	def onLoad(self, bot):
 		Plugin.onLoad(bot)
 		self.dictionary = self.bot.db.table('dictionary')
 	
-	def cmdDefine(muc, client, args, respond):
-		term, defin = args
+	def cmdDefine(self, muc, client, args, respond):
+		term, defin = (args[0], args[1])
 		term = term.lower()
 		
-		entry = self.dictionary.get({'term': term, 'muc': muc.getId()})
+		entry = self.dictionary.getOne({'term': term, 'muc': muc.getId()})
 		if entry is not None:
 			respond("%s is already defined by %s: %s" % (term, entry['author'], entry['definition']))
 			return
 		
 		self.dictionary.put({'term': term, 'muc': muc.getId(), 'author': client.getNick(), 'definition': defin)
 		respond("Defined %s" % term)
+	
+	def cmdForget(self, muc, client, args, respond):
+		term = args[0]
+		termQuery = {'term': term.lower(), 'muc': muc.getId()}
+		
+		entry = self.dictionary.getOne(termQuery)
+		if entry is None:
+			respond("Unknown term: %s" % term)
+		
+		self.dictionary.delete(termQuery)
+		respond("Forgot %s" % term)
 		
 	def onMucMessage(self, muc, client, message, jid=None)
 		if self.dispatcher.onMucMessage(muc, client, message, jid=jid):

@@ -77,3 +77,6 @@ class Command(object):
 			if not client.isMember():
 				return False
 		return True
+		
+	def splitArgs(self, message):
+		return message.split(" ", self.argc)
