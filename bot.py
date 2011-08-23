@@ -43,7 +43,7 @@ class Pyrefly(Handler):
 
 		# Set up the import path for plugins
 		myPath = os.path.abspath(__file__)
-		pluginPath = "%s/plugins" % myPath.rsplit('/', 1)[0]
+		pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")
 		print "Path for plugins is: %s" % pluginPath
 		sys.path.append(pluginPath)
 	
