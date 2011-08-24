@@ -55,8 +55,10 @@ class Pyrefly(Handler):
 			exit(1)
 
 	def initialize(self):
-		mucTable = self.db.table('muc')
-		toJoin = mucTable.get({'autojoin': 'y'})
+		toJoin = []
+		for mucId in self.config.getRoomList():
+			toJoin.append({'muc': mucId, 'nick': self.config.get('nick', mucId), 'password': ''})
+			
 		for mucToJoin in toJoin:
 			muc = self.join(mucToJoin['muc'], mucToJoin['nick'], password=mucToJoin['password'])
 			if muc is not None:
