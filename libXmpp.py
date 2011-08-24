@@ -155,7 +155,6 @@ class Muc(object):
 			user = self.roster[nick]
 
 			# This unpleasantness checks for and handles nickname changes:
-
 			x = presence.getTag(presence, {}, NS_MUC_USER)
 				if x is None:
 					return
