@@ -29,7 +29,7 @@ class Dictionary(Plugin):
 		self.dictionary = self.bot.db.table('dictionary')
 		Plugin.onLoad(self, bot)
 	
-	@Command('define', args=2)
+	@Command('define', minArgs=2, maxArgs=2)
 	@Help("Usage: !define <term> <definition>")
 	@Access('member')
 	def cmdDefine(self, muc, client, args, respond):
