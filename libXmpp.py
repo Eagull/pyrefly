@@ -76,7 +76,7 @@ class Client(object):
 		mucName = sender.getStripped()
 		lMucName = mucName.lower()
 		nick = sender.getResource()
-		toprint = "XMPP: <%s/%s> %s" % (mucName, nick, message.getBody())
+		toprint = "libXmpp: <%s/%s> %s" % (mucName, nick, message.getBody())
 		print toprint.encode('utf-8')
 
 		if lMucName not in self.mucs:
@@ -164,8 +164,8 @@ class Muc(object):
 
 			# This unpleasantness checks for and handles nickname changes:
 			x = presence.getTag(presence, {}, NS_MUC_USER)
-				if x is None:
-					return
+			if x is None:
+				return
 			item = x.getTag('item')
 			status = x.getTag('status')
 
