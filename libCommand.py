@@ -22,15 +22,24 @@ class Dispatcher(object):
 	def __init__(self, initChars = ['!']):
 		self.commands = {}
 		self.gates = []
+		self.overflowHandlers = []
 		self.initChars = initChars
 	
 	def addGate(self, gate):
 		self.gates.append(gate)
+
+	def define(self, command):
+		trigger = command.getTrigger().lower()
+		if trigger in self.commands:
+			return False
+		self.commands[trigger] = command
+		return True
 	
-	def define(self, name, handler, access='all', argc=0):
-		cmd = Command(name, handler, access, argc)
-		self.commands[name.lower()] = cmd
-		return cmd
+	def undefine(self, command):
+		trigger = command.getTrigger().lower()
+		if trigger not in self.commands:
+			return
+		del self.commands[trigger]
 	
 	def onMucMessage(self, muc, client, message, jid=None):
 		# Only respond for messages which begin with command invocation.
@@ -40,45 +49,59 @@ class Dispatcher(object):
 		# Determine what command is being invoked, and exit if we don't handle it.
 		cmdStr = message.split(" ", 1)[0][1:].lower()
 		if cmdStr not in self.commands:
-			return False
+			self.sendOverflow(muc, client, cmdStr, message, jid)
 		cmd = self.commands[cmdStr]
 		
 		# Test this invocation against the gates.
 		for gate in self.gates:
 			if not gate(muc, client, message, cmd, jid=jid):
+				# Don't treat this as an overflow.
 				return False
 		
 		cmd.dispatch(muc, client, message)
 		return True
-
+	
+	def newCommand(self, trigger):
+		return CommandBuilder(self, trigger)
+	
 
 class Command(object):
 	
-	def __init__(self, name, handler, access, argc):
-		self.name = name
-		self.handler = handler
+	def __init__(self, trigger, minArgs=0, maxArgs = None):
+		self.trigger = trigger
+		self.minArgs = minArgs
+		self.maxArgs = maxArgs
+	
+	def __call__(self, func):
+		func._command = {}
+		func._command['trigger'] = self.trigger.lower()
+		func._command['minArgs'] = self.minArgs
+		if self.maxArgs is not None:
+			func._command['maxArgs'] = self.maxArgs
+		return func
+
+
+class Help(object):
+
+	def __init__(self, helpStr):
+		self.helpStr = helpStr
+	
+	def __call__(self, func):
+		if not hasattr('_command', func):
+			return func
+		
+		func._command['help'] = self.helpStr
+		return func
+
+
+class Access(object):
+	
+	def __init__(self, access):
 		self.access = access
-		self.argc = argc
 	
-	def dispatch(self, muc, client, message):
-		# Gate on access restriction of this command.
-		if not self.accessGate(muc, client):
-			return
+	def __call__(self, func):
+		if not hasattr('_command', func):
+			return func
 		
-		args = self.splitArgs(message)
-                if len(args) != self.argc:
-                        return
-		
-		# Closure for easy response
-		def respond(message):
-			muc.sendMessage(message)
-		self.handler(muc, client, args, respond)
-	
-	def accessGate(self, muc, client):
-		if self.access == 'member':
-			if not client.isMember():
-				return False
-		return True
-		
-	def splitArgs(self, message):
-		return message.split(" ", self.argc)[1:]
+		func._command['access'] = access
+		return func

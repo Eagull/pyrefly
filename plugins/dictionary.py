@@ -17,21 +17,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from plugin import Plugin
-from libCommand import Dispatcher
+from libCommand import Command, Help, Access
 
 
 class Dictionary(Plugin):
 	
 	def __init__(self):
 		Plugin.__init__(self)
-		self.dispatcher = Dispatcher()
-		self.dispatcher.define('define', self.cmdDefine, access='member', argc=2)
-		self.dispatcher.define('forget', self.cmdForget, access='member', argc=1)
 	
 	def onLoad(self, bot):
-		Plugin.onLoad(self, bot)
 		self.dictionary = self.bot.db.table('dictionary')
+		Plugin.onLoad(self, bot)
 	
+	@Command('define', args=2)
+	@Help("Usage: !define <term> <definition>")
+	@Access('member')
 	def cmdDefine(self, muc, client, args, respond):
 		term, defin = (args[0], args[1])
 		term = term.lower()
