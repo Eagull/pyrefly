@@ -55,7 +55,7 @@ class Pyrefly(Handler):
 			exit(1)
 
 	def initialize(self):
-		toJoin = []
+		toJoin = self.db.table('muc').get({'autojoin': 'y'})
 		for mucId in self.config.getRoomList():
 			toJoin.append({'muc': mucId, 'nick': self.config.get('nick', mucId), 'password': ''})
 			
