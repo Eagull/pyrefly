@@ -25,8 +25,8 @@ class Dictionary(Plugin):
 	def __init__(self):
 		Plugin.__init__(self)
 		self.dispatcher = Dispatcher()
-		self.dispatcher.define('define', self.cmdDefine, access='member', argc=3)
-		self.dispatcher.define('forget', self.cmdForget, access='member', argc=2)
+		self.dispatcher.define('define', self.cmdDefine, access='member', argc=2)
+		self.dispatcher.define('forget', self.cmdForget, access='member', argc=1)
 	
 	def onLoad(self, bot):
 		Plugin.onLoad(self, bot)

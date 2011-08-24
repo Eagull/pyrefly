@@ -81,4 +81,4 @@ class Command(object):
 		return True
 		
 	def splitArgs(self, message):
-		return message.split(" ", self.argc - 1)[1:]
+		return message.split(" ", self.argc)[1:]
