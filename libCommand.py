@@ -66,6 +66,8 @@ class Command(object):
 			return
 		
 		args = self.splitArgs(message)
+                if len(args) != self.argc:
+                        return
 		
 		# Closure for easy response
 		def respond(message):
@@ -79,4 +81,4 @@ class Command(object):
 		return True
 		
 	def splitArgs(self, message):
-		return message.split(" ", self.argc)
+		return message.split(" ", self.argc - 1)[1:]

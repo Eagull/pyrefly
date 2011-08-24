@@ -163,7 +163,7 @@ class Db(object):
 	def _unclean(self, vMap):
 		uncleanMap = {}
 		for k, v in vMap.items():
-			if v[0:1] == '@'
+			if v is not None and v[0:1] == '@':
 				v = v[1:]
 			uncleanMap[k] = v
 		return uncleanMap
