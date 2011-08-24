@@ -35,6 +35,9 @@ class Dictionary(Plugin):
 	def cmdDefine(self, muc, client, args, respond):
 		term, defin = (args[0], args[1])
 		term = term.lower()
+
+                if len(defin) > 3 and defin[0:3] == '=> ':
+                        defin = defin[3:].trim()
 		
 		entry = self.dictionary.getOne({'term': term, 'muc': muc.getId()})
 		if entry is not None:
@@ -51,6 +54,7 @@ class Dictionary(Plugin):
 		entry = self.dictionary.getOne(termQuery)
 		if entry is None:
 			respond("Unknown term: %s" % term)
+                        return
 		
 		self.dictionary.delete(termQuery)
 		respond("Forgot %s" % term)
