@@ -19,16 +19,18 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 from handler import Handler
 
 class Core(Handler):
-	
+
 	def __init__(self, bot):
 		Handler.__init__(self)
 		self.bot = bot
-	
+
 	def onMucMessage(self, muc, client, message, jid=None):
 		if client is None:
 			return
-	
-		print "Message from %s/%s: %s" % (muc.getId(), client.getNick(), message)
+
+		#~ uncomment if debugging
+		#~ toprint = "Core.onMucMessage: %s/%s - %s" % (muc.getId(), client.getNick(), message)
+		#~ print toprint.encode('utf-8')
 		if not message[0] == '!':
 			return
 		args = message.split(' ')
@@ -48,7 +50,7 @@ class Core(Handler):
 				muc.sendMessage("Error unloading %s: %s" % (args[1], err))
 			else:
 				muc.sendMessage("Plugin %s unloaded" % args[1])
-				
+
 		elif args[0] == '!reload' and length == 2:
 			result, err = self.bot.reloadPlugin(args[1])
 			if not result:
