@@ -23,6 +23,8 @@ from db import Db
 from core import Core
 from libXmpp import Client
 from handler import Handler
+from libCommand import Dispatcher
+
 import sys, os
 #from handlers import commandHandler, logHandler, fightHandler, swearHandler, replyHandler
 #import pyrefight
@@ -39,8 +41,9 @@ class Pyrefly(Handler):
 		self.db = Db('pyrefly', self.config.get('account', 'db'), self.config.get('password', 'db'), self.config.get('spreadsheet', 'db'))
 		self.plugins = {}
 		self.pluginModules = {}
-		self.handlers = [Core(self)]
+		self.dispatcher = Dispatcher()
 
+		self.handlers = [Core(self), self.dispatcher]
 		# Set up the import path for plugins
 		myPath = os.path.abspath(__file__)
 		pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")

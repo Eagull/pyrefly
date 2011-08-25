@@ -29,15 +29,15 @@ class Dictionary(Plugin):
 		self.dictionary = self.bot.db.table('dictionary')
 		Plugin.onLoad(self, bot)
 	
-	@Command('define', minArgs=2, maxArgs=2)
-	@Help("Usage: !define <term> <definition>")
+	@Command('learn', minArgs=2, maxArgs=2)
+	@Help('Learn a new dictionary definition', usage='<term> <definition>')
 	@Access('member')
 	def cmdDefine(self, muc, client, args, respond):
 		term, defin = (args[0], args[1])
 		term = term.lower()
 
-                if len(defin) > 3 and defin[0:3] == '=> ':
-                        defin = defin[3:].trim()
+		if len(defin) > 3 and defin[0:3] == '=> ':
+				defin = defin[3:].trim()
 		
 		entry = self.dictionary.getOne({'term': term, 'muc': muc.getId()})
 		if entry is not None:
@@ -47,6 +47,9 @@ class Dictionary(Plugin):
 		self.dictionary.put({'term': term, 'muc': muc.getId(), 'author': client.getNick(), 'definition': defin})
 		respond("Defined %s" % term)
 	
+	@Command('forget', minArgs=1)
+	@Help('Forget a dictionary definition', usage='<term>')
+	@Access('member')
 	def cmdForget(self, muc, client, args, respond):
 		term = args[0]
 		termQuery = {'term': term.lower(), 'muc': muc.getId()}

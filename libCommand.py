@@ -16,10 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+from handler import Handler
 
-class Dispatcher(object):
+
+class Dispatcher(Handler):
 	
 	def __init__(self, initChars = ['!']):
+		Handler.__init__(self)
 		self.commands = {}
 		self.gates = []
 		self.overflowHandlers = []
@@ -61,13 +64,82 @@ class Dispatcher(object):
 		cmd.dispatch(muc, client, message)
 		return True
 	
-	def newCommand(self, trigger):
-		return CommandBuilder(self, trigger)
+	def registerCommandHandler(self, func):
+		commandInfo = func._command
+		command = CommandHandler(self, func, commandInfO)
+		trigger = command.getTrigger()
+		if trigger in self.commands:
+			return False
+		
+		self.commands[trigger] = command
+		return command
+		
+
+class CommandHandle(object):
 	
+	def __init__(self, dispatcher, handler, params):
+		self.dispatcher = dispatcher
+		self.handler = handler
+		self.trigger = params['trigger']
+		self.minArgs = params['minArgs']
+		
+		self.maxArgs = None
+		if 'maxArgs' in params:
+			self.maxArgs = params['maxArgs']
+		
+		self.access = None
+		if 'access' in params:
+			self.access = params['access']
+		
+		self.helpStr = None
+		if 'help' in params:
+			self.helpStr = params['help']
+		
+		self.usage = ''
+		if 'usage' in params:
+			self.usage = params['usage']
+		
+	def showHelp(self, muc):
+		if self.helpStr is not None:
+			muc.sendMessage(self.helpStr)
+		self.showUsage(muc)
+	
+	def showUsage(self, muc):
+		if self.usage != '':
+			muc.sendMessage('Usage: %s%s %s' % (self.dispatcher.initChars[0], self.trigger, self.usage)
+	
+	def hasAccess(self, user):
+		if self.access is None:
+			return True
+		elif self.access == 'member':
+			return user.isMember()
+		return False
+	
+	def parseArgs(self, message):
+		if self.maxArgs is not None:
+			return message.split(" ", self.maxArgs)[1:]
+		else:
+			return message.split(" ")[1:]
+
+	def __call__(self, muc, user, message, jid=None):
+		if not self.hasAccess(user):
+			return False
+			
+		args = self.parseArgs(message.strip())
+		
+		say = lambda reply: muc.sendMessage(reply)
+		whisper = lambda reply: user.sendMessage(reply)
+		
+		if len(args) < self.minArgs:
+			self.showUsage(user)
+			return
+		
+		self.handler(muc, user, args, say, whisper)
+		
 
 class Command(object):
 	
-	def __init__(self, trigger, minArgs=0, maxArgs = None):
+	def __init__(self, trigger, minArgs=0, maxArgs=None):
 		self.trigger = trigger
 		self.minArgs = minArgs
 		self.maxArgs = maxArgs
@@ -83,14 +155,16 @@ class Command(object):
 
 class Help(object):
 
-	def __init__(self, helpStr):
+	def __init__(self, helpStr, usage=''):
 		self.helpStr = helpStr
+		self.usage = usage
 	
 	def __call__(self, func):
 		if not hasattr('_command', func):
 			return func
 		
 		func._command['help'] = self.helpStr
+		func._command['usage'] = self.usage
 		return func
 
 

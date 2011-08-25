@@ -210,6 +210,10 @@ class User(object):
 		self.role = ''
 		self.jid = ''
 	
+	def sendMessage(self, body):
+		message = xmpp.protocol.Message(to=self.jid, body=body)
+		self.muc.client.client.send(message)
+	
 	def getNick(self):
 		return self.nick
 	

@@ -17,6 +17,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from handler import Handler
+import types
 
 class Plugin(Handler):
 	
@@ -33,6 +34,13 @@ class Plugin(Handler):
 	def onLoad(self, bot):
 		self.bot = bot
 		self.bot.registerHandler(self)
+		self._registerCommands()
 
 	def onUnload(self):
 		self.bot.unregisterHandler(self)
+
+	def registerCommands(self):
+		for key in dir(self):
+			func = getattr(key, self)
+			if isinstance(func, types.FunctionType) and hasattr('_command', func):
+				self.bot.dispatcher.registerCommandHandler(func)
