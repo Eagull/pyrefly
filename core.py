@@ -28,6 +28,9 @@ class Core(Handler):
 		if client is None:
 			return
 
+		if not message:
+			return
+
 		#~ uncomment if debugging
 		#~ toprint = "Core.onMucMessage: %s/%s - %s" % (muc.getId(), client.getNick(), message)
 		#~ print toprint.encode('utf-8')
