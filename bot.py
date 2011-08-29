@@ -49,7 +49,7 @@ class Pyrefly(Handler):
 		pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")
 		print "Path for plugins is: %s" % pluginPath
 		sys.path.append(pluginPath)
-	
+
 	def connect(self):
 		self.db.connect()
 		result, err = self.client.connect(self.config.get('password'), 'bot' + self.config.hash[:6])
@@ -58,16 +58,16 @@ class Pyrefly(Handler):
 			exit(1)
 
 	def initialize(self):
-		toJoin = self.db.table('muc').get({'autojoin': 'y'})
+		toJoin = []
 		for mucId in self.config.getRoomList():
 			toJoin.append({'muc': mucId, 'nick': self.config.get('nick', mucId), 'password': ''})
-			
+
 		for mucToJoin in toJoin:
 			muc = self.join(mucToJoin['muc'], mucToJoin['nick'], password=mucToJoin['password'])
 			if muc is not None:
 				muc.data = mucToJoin
 
-	
+
 	def join(self, muc, nick, password=''):
 		return self.client.join(muc, nick, password=password)
 
@@ -81,7 +81,7 @@ class Pyrefly(Handler):
 
 	def registerHandler(self, handler):
 		self.handlers.append(handler)
-	
+
 	def unregisterHandler(self, handler):
 		self.handlers.remove(handler)
 
@@ -99,7 +99,7 @@ class Pyrefly(Handler):
 				self.pluginModules[name] = __import__(importName, globals(), locals(), [], 0)
 			except ImportError:
 				return (False, "No such module: %s" % importName)
-			
+
 		if not self.pluginModules[name]:
 			print "import failed!"
 			del self.pluginModules[name]
@@ -117,7 +117,7 @@ class Pyrefly(Handler):
 		self.plugins[name] = clazz()
 		self.plugins[name].onLoad(self)
 		return (True, source)
-		
+
 	def unloadPlugin(self, name):
 		if name not in self.plugins:
 			return (False, None, "not loaded")
@@ -139,7 +139,7 @@ class Pyrefly(Handler):
 		self.plugins[name].onUnload()
 		del self.plugins[name]
 		return (True, unloaded, None)
-	
+
 	def reloadPlugin(self, name):
 		if name not in self.plugins:
 			return (False, "Not loaded")
@@ -156,7 +156,7 @@ class Pyrefly(Handler):
 			if name in plugin.getDependencies():
 				plugin.setDependency(pluginName, self.plugins[name])
 		return (True, None)
-		
+
 
 ##~ client.RegisterHandler('message', logHandler.messageHandler)
 #client.RegisterHandler('presence', logHandler.presenceHandler)

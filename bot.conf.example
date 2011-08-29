@@ -3,14 +3,20 @@ nick = pyrefly
 id = ****@talkr.im/bot
 password = ****
 
+[omegle]
+id = ****@talkr.im/bot
+password = ****
+server = http://bajor.omegle.com
+nickList = ['Omegler', 'Stranger', 'Strangler', 'Creeper', 'Monster']
+
 # Must match the template: https://spreadsheets.google.com/spreadsheet/ccc?key=0AvXzDtTstzvWdHN4WGZHSUM0dE42eUZGN1Z4MEw5dkE&hl=en_US
 [db]
 account = ****@gmail.com
 password = ****
 spreadsheet = 0AnH6-TZ2sGredGU5ZGJHbGlyRlR2dXVNbnJUWmFvVUE
 
-[omegle]
-id = ****@talkr.im/bot
-password = ****
-server = http://bajor.omegle.com
-nickList = ['Omegler', 'Stranger', 'Strangler', 'Creeper', 'Monster']
+[testmoth@chat.speeqe.com]
+nick = pyrefly
+pass = pass
+autojoin = false
+control = true

@@ -18,10 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from handler import Handler
 
-
 class Dispatcher(Handler):
-	
-	def __init__(self, initChars = ['!']):
+		def __init__(self, initChars = ['!']):
 		Handler.__init__(self)
 		self.commands = {}
 		self.overflowHandlers = []
@@ -50,19 +48,19 @@ class Dispatcher(Handler):
 		# Only respond for messages which begin with command invocation.
 		if message[0:1] not in self.initChars:
 			return False
-		
+
 		# Determine what command is being invoked, and exit if we don't handle it.
 		cmdStr = message.split(" ", 1)[0][1:].lower()
 		if cmdStr not in self.commands:
 			self.sendOverflow(muc, client, cmdStr, message, jid)
 		cmd = self.commands[cmdStr]
-		
+
 		# Test this invocation against the gates.
 		for gate in self.gates:
 			if not gate(muc, client, message, cmd, jid=jid):
 				# Don't treat this as an overflow.
 				return False
-		
+
 		cmd.dispatch(muc, client, message)
 		return True
 	
