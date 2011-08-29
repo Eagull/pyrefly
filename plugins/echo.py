@@ -17,20 +17,25 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from plugin import Plugin
+import re
 
 class Echo(Plugin):
-	
+
 	def __init__(self):
 		Plugin.__init__(self)
-	
+
 	def onLoad(self, bot):
 		Plugin.onLoad(self, bot)
 
 	def onUnload(self):
 		Plugin.onUnload(self)
-	
+
 	def onMucMessage(self, muc, client, message, jid=None):
 		if client is None:
 			return
+
+		print message
+		print type(re.match('<\w*?>', message))
+		if re.match('<\w*?>', message)	!= None: return
 
 		muc.sendMessage("<%s> %s" % (client.getNick(), message))
