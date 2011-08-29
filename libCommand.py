@@ -61,7 +61,7 @@ class Dispatcher(Handler):
 				# Don't treat this as an overflow.
 				return False
 
-		cmd.dispatch(muc, client, message)
+		cmd(muc, client, message, jid=jid)
 		return True
 	
 	def registerCommandHandler(self, func):
