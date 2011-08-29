@@ -24,13 +24,15 @@ class Dispatcher(Handler):
 	def __init__(self, initChars = ['!']):
 		Handler.__init__(self)
 		self.commands = {}
-		self.gates = []
 		self.overflowHandlers = []
 		self.initChars = initChars
-	
-	def addGate(self, gate):
-		self.gates.append(gate)
 
+	def getCommand(self, trigger):
+		trigger = trigger.lower()
+		if trigger not in self.commands:
+			return None
+		return self.commands[trigger]
+		
 	def define(self, command):
 		trigger = command.getTrigger().lower()
 		if trigger in self.commands:

@@ -16,31 +16,28 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from handler import Handler
-import types
+from plugin import Plugin
+from libCommand import Command, Help
 
-class Plugin(Handler):
+class Help(Plugin):
 	
 	def __init__(self):
-		Handler.__init__(self)
-		self.bot = None
-
-	def getDependencies(self):
-		return tuple()
+		Plugin.__init__(self)
 	
-	def setDependency(self, name, dep):
-		pass
-
 	def onLoad(self, bot):
-		self.bot = bot
-		self.bot.registerHandler(self)
-		self._registerCommands()
-
-	def onUnload(self):
-		self.bot.unregisterHandler(self)
-
-	def _registerCommands(self):
-		for key in dir(self):
-			func = getattr(key, self)
-			if isinstance(func, types.FunctionType) and hasattr('_command', func):
-				self.bot.dispatcher.registerCommandHandler(func)
+		Plugin.onLoad(self, bot)
+	
+	@Command('help', minArgs=1)
+	@Help("You can't possibly be THAT helpless.", usage='<command>')
+	def cmdHelp(self, muc, user, args, say, whisper):
+		command = self.bot.dispatcher.getCommand(args[0])
+		if command is None:
+			say("No such command: !%s" % args[0])
+			return
+	
+		auth = ''
+		if not command.hasAccess(user):
+			auth = ' (not authorized)'
+		say(command.getHelp())
+		say("Usage: %s%s %s %s" % (command.getTriggerChar(), command.getTrigger(), command.getUsage(), auth))
+		if not command.hasAccess(user):

@@ -63,10 +63,7 @@ class Dictionary(Plugin):
 		respond("Forgot %s" % term)
 		
 	def onMucMessage(self, muc, client, message, jid=None):
-		if self.dispatcher.onMucMessage(muc, client, message, jid=jid):
-			return
-		
-		if message[0:1] != '!':
+		if message[0:1] != '?':
 			return
 		
 		term = message.split(" ", 1)[0][1:].lower()
@@ -78,4 +75,4 @@ class Dictionary(Plugin):
 		muc.sendMessage(self.postProcess(entry['definition'], client))
 	
 	def postProcess(self, defin, client):
-		return defin.replace("%n", client.getNick())
+		return defin.replace("$who", client.getNick())
