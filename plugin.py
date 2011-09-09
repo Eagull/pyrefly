@@ -38,9 +38,15 @@ class Plugin(Handler):
 
 	def onUnload(self):
 		self.bot.unregisterHandler(self)
+		self._unregisterCommands()
 
 	def _registerCommands(self):
 		for key in dir(self):
 			func = getattr(self, key)
 			if hasattr(func, '_command') and 'trigger' in func._command:
 				self.bot.dispatcher.registerCommandHandler(func)
+	def _unregisterCommands(self):
+		for key in dir(self):
+			func = getattr(self, key)
+			if hasattr(func, '_command') and 'trigger' in func._command:
+				self.bot.dispatcher.unregisterCommandHandler(func)

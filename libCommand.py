@@ -68,6 +68,11 @@ class Dispatcher(Handler):
 		self.commands[trigger] = command
 		return command
 	
+	def unregisterCommandHandler(self, func):
+		trigger = func._command['trigger']
+		if trigger in self.commands:
+		  del self.commands[trigger]
+	
 	def getTriggerChar(self):
 		return self.initChars[0]
 		

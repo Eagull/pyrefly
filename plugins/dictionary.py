@@ -32,7 +32,6 @@ class Dictionary(Plugin):
 	
 	@Command('learn', minArgs=2, maxArgs=2)
 	@Help('Learn a new dictionary definition', usage='<term> <definition>')
-	@Access('member')
 	def cmdDefine(self, muc, client, args, say, whisper):
 		term, defin = (args[0], args[1])
 		term = term.lower()
@@ -49,7 +48,6 @@ class Dictionary(Plugin):
 	
 	@Command('forget', minArgs=1)
 	@Help('Forget a dictionary definition', usage='<term>')
-	@Access('member')
 	def cmdForget(self, muc, client, args, say, whisper):
 		term = args[0]
 		termQuery = {'term': term.lower(), 'muc': muc.getId()}
@@ -64,7 +62,6 @@ class Dictionary(Plugin):
 
 	@Command('definfo', minArgs=1)
 	@Help('Query information about a definition', usage='<term>')
-	@Access('member')
 	def cmdDefInfo(self, muc, client, args, say, whisper):
 		term = (args[0])
 		term = term.lower()
