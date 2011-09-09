@@ -53,15 +53,28 @@ class Pyrefly(Handler):
 			exit(1)
 
 	def initialize(self):
-		toJoin = []
+		joinMap = {}
+		table = self.db.table('rooms')
+		if table is not None:
+			rows = table.get({'autojoin': 'y'})
+			for row in rows:
+				joinMap[row['muc']] = row
 		for mucId in self.config.getRoomList():
-			toJoin.append({'muc': mucId, 'nick': self.config.get('nick', mucId), 'password': ''})
+			if mucId not in joinMap:
+				group = self.config.get('group', mucId)
+				if not group:
+					group = 'global'
+				nick = self.config.get('nick', mucId)
+				name = mucId.split('@')[0]
+				data = {'name': name, 'muc': mucId, 'nick': nick, 'password': '', 'group': group, 'autojoin': 'y', 'control': 'n'}
+				joinMap[mucId] = data
+				if table is not None:
+					table.put(data)
 
-		for mucToJoin in toJoin:
+		for mucToJoin in joinMap.values():
 			muc = self.join(mucToJoin['muc'], mucToJoin['nick'], password=mucToJoin['password'])
 			if muc is not None:
 				muc.data = mucToJoin
-
 
 	def join(self, muc, nick, password=''):
 		return self.client.join(muc, nick, password=password)
