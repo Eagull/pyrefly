@@ -26,11 +26,6 @@ from handler import Handler
 from libCommand import Dispatcher
 
 import sys, os
-#from handlers import commandHandler, logHandler, fightHandler, swearHandler, replyHandler
-#import pyrefight
-#import dictionary
-
-# TODO: add SIGINT and exit handlers
 
 class Pyrefly(Handler):
 
@@ -101,17 +96,14 @@ class Pyrefly(Handler):
 				return (False, "No such module: %s" % importName)
 
 		if not self.pluginModules[name]:
-			print "import failed!"
 			del self.pluginModules[name]
 			return (False, "Module not defined after import")
-		print "Imported: %s" % self.pluginModules[name]
 
 		try:
 			clazz = getattr(self.pluginModules[name], name)
 		except AttributeError:
 			return (False, "Module has no class defined")
 
-		print "Class: %s" % clazz
 		if not clazz:
 			return (False, "Class not defined after import")
 		self.plugins[name] = clazz()
@@ -157,17 +149,6 @@ class Pyrefly(Handler):
 				plugin.setDependency(pluginName, self.plugins[name])
 		return (True, None)
 
-
-##~ client.RegisterHandler('message', logHandler.messageHandler)
-#client.RegisterHandler('presence', logHandler.presenceHandler)
-#client.RegisterHandler('presence', xmppUtils.rosterHandler)
-#client.RegisterHandler('message', commandHandler.messageHandler)
-
-#client.RegisterHandler('message', replyHandler.messageHandler)
-#client.RegisterHandler('message', swearHandler.messageHandler)
-
-#client.RegisterHandler('message', fightHandler.messageHandler)
-#client.RegisterHandler('presence', pyrefight.presHandler)
 
 if __name__ == '__main__':
 	pyrefly = Pyrefly(config)

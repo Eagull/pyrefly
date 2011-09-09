@@ -39,5 +39,4 @@ class Help(Plugin):
 		if not command.hasAccess(user):
 			auth = ' (not authorized)'
 		say(command.getHelp())
-		say("Usage: %s%s %s %s" % (command.getTriggerChar(), command.getTrigger(), command.getUsage(), auth))
-		if not command.hasAccess(user):
+		say("Usage: %s%s %s%s" % (command.getTriggerChar(), command.getTrigger(), command.getUsage(), auth))

@@ -27,8 +27,8 @@ class Dictionary(Plugin):
 		Plugin.__init__(self)
 		
 	def onLoad(self, bot):
-		self.dictionary = self.bot.db.table('dictionary')
 		Plugin.onLoad(self, bot)
+		self.dictionary = self.bot.db.table('dictionary')
 	
 	@Command('learn', minArgs=2, maxArgs=2)
 	@Help('Learn a new dictionary definition', usage='<term> <definition>')
@@ -62,7 +62,10 @@ class Dictionary(Plugin):
 		self.dictionary.delete(termQuery)
 		say("Forgot %s" % term)
 
-	def cmdDefInfo(self, muc, client, args, say):
+	@Command('definfo', minArgs=1)
+	@Help('Query information about a definition', usage='<term>')
+	@Access('member')
+	def cmdDefInfo(self, muc, client, args, say, whisper):
 		term = (args[0])
 		term = term.lower()
 

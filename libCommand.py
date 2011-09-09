@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from handler import Handler
 
 class Dispatcher(Handler):
-		def __init__(self, initChars = ['!']):
+	def __init__(self, initChars = ['!']):
 		Handler.__init__(self)
 		self.commands = {}
 		self.overflowHandlers = []
@@ -52,27 +52,24 @@ class Dispatcher(Handler):
 		# Determine what command is being invoked, and exit if we don't handle it.
 		cmdStr = message.split(" ", 1)[0][1:].lower()
 		if cmdStr not in self.commands:
-			self.sendOverflow(muc, client, cmdStr, message, jid)
+		  return
 		cmd = self.commands[cmdStr]
-
-		# Test this invocation against the gates.
-		for gate in self.gates:
-			if not gate(muc, client, message, cmd, jid=jid):
-				# Don't treat this as an overflow.
-				return False
 
 		cmd(muc, client, message, jid=jid)
 		return True
 	
 	def registerCommandHandler(self, func):
 		commandInfo = func._command
-		command = CommandHandler(self, func, commandInfO)
+		command = CommandHandle(self, func, commandInfo)
 		trigger = command.getTrigger()
 		if trigger in self.commands:
 			return False
 		
 		self.commands[trigger] = command
 		return command
+	
+	def getTriggerChar(self):
+		return self.initChars[0]
 		
 
 class CommandHandle(object):
@@ -98,6 +95,18 @@ class CommandHandle(object):
 		self.usage = ''
 		if 'usage' in params:
 			self.usage = params['usage']
+	
+	def getTrigger(self):
+		return self.trigger
+	
+	def getHelp(self):
+	  return self.helpStr
+	
+	def getUsage(self):
+		return self.usage
+	
+	def getTriggerChar(self):
+		return self.dispatcher.getTriggerChar()
 		
 	def showHelp(self, muc):
 		if self.helpStr is not None:
@@ -106,7 +115,7 @@ class CommandHandle(object):
 	
 	def showUsage(self, muc):
 		if self.usage != '':
-			muc.sendMessage('Usage: %s%s %s' % (self.dispatcher.initChars[0], self.trigger, self.usage)
+			muc.sendMessage('Usage: %s%s %s' % (self.dispatcher.initChars[0], self.trigger, self.usage))
 	
 	def hasAccess(self, user):
 		if self.access is None:
@@ -145,7 +154,8 @@ class Command(object):
 		self.maxArgs = maxArgs
 	
 	def __call__(self, func):
-		func._command = {}
+		if not hasattr(func, '_command'):
+			func._command = {}
 		func._command['trigger'] = self.trigger.lower()
 		func._command['minArgs'] = self.minArgs
 		if self.maxArgs is not None:
@@ -160,8 +170,8 @@ class Help(object):
 		self.usage = usage
 	
 	def __call__(self, func):
-		if not hasattr('_command', func):
-			return func
+		if not hasattr(func, '_command'):
+			func._command = {}
 		
 		func._command['help'] = self.helpStr
 		func._command['usage'] = self.usage
@@ -174,8 +184,8 @@ class Access(object):
 		self.access = access
 	
 	def __call__(self, func):
-		if not hasattr('_command', func):
-			return func
+		if not hasattr(func, '_command'):
+			func._command = {}
 		
-		func._command['access'] = access
+		func._command['access'] = self.access
 		return func

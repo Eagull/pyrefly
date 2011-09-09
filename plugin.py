@@ -41,6 +41,6 @@ class Plugin(Handler):
 
 	def _registerCommands(self):
 		for key in dir(self):
-			func = getattr(key, self)
-			if isinstance(func, types.FunctionType) and hasattr('_command', func):
+			func = getattr(self, key)
+			if hasattr(func, '_command') and 'trigger' in func._command:
 				self.bot.dispatcher.registerCommandHandler(func)
