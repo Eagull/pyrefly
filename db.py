@@ -156,6 +156,8 @@ class Db(object):
 		for k, v in vMap.items():
 			if isinstance(v, unicode):
 				v = v.encode('utf-8')
+			if isinstance(v, int):
+				v = str(v)
 			if v is None:
 				v = ''
 			elif v[0:1] in [' ', '$', '@', '=', '<', '>']:
