@@ -9,11 +9,11 @@ password = ****
 server = http://bajor.omegle.com
 nickList = ['Omegler', 'Stranger', 'Strangler', 'Creeper', 'Monster']
 
-[dictionary]
-spreadsheet_id = 0AnH6-TZ2sGredGU5ZGJHbGlyRlR2dXVNbnJUWmFvVUE
-worksheet_id = od6
-account =  ****@mail.com
-pass = ****
+# Must match the template: https://spreadsheets.google.com/spreadsheet/ccc?key=0AvXzDtTstzvWdHN4WGZHSUM0dE42eUZGN1Z4MEw5dkE&hl=en_US
+[db]
+account = ****@gmail.com
+password = ****
+spreadsheet = 0AnH6-TZ2sGredGU5ZGJHbGlyRlR2dXVNbnJUWmFvVUE
 
 [pyrefight]
 spreadsheet_id = <google spreadsheet id can be found in the URL of the spreadsheet>
@@ -22,3 +22,6 @@ pass = ****
 
 [testmoth@chat.speeqe.com]
 nick = pyrefly
+pass = pass
+autojoin = false
+control = true

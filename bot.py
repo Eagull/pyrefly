@@ -23,12 +23,9 @@ from db import Db
 from core import Core
 from libXmpp import Client
 from handler import Handler
-import sys, os
-#from handlers import commandHandler, logHandler, fightHandler, swearHandler, replyHandler
-#import pyrefight
-#import dictionary
+from libCommand import Dispatcher
 
-# TODO: add SIGINT and exit handlers
+import sys, os
 
 class Pyrefly(Handler):
 
@@ -39,14 +36,15 @@ class Pyrefly(Handler):
 		self.db = Db('pyrefly', self.config.get('account', 'db'), self.config.get('password', 'db'), self.config.get('spreadsheet', 'db'))
 		self.plugins = {}
 		self.pluginModules = {}
-		self.handlers = [Core(self)]
+		self.dispatcher = Dispatcher()
 
+		self.handlers = [Core(self), self.dispatcher]
 		# Set up the import path for plugins
 		myPath = os.path.abspath(__file__)
-		pluginPath = "%s/plugins" % myPath.rsplit('/', 1)[0]
+		pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")
 		print "Path for plugins is: %s" % pluginPath
 		sys.path.append(pluginPath)
-	
+
 	def connect(self):
 		self.db.connect()
 		result, err = self.client.connect(self.config.get('password'), 'bot' + self.config.hash[:6])
@@ -55,14 +53,16 @@ class Pyrefly(Handler):
 			exit(1)
 
 	def initialize(self):
-		mucTable = self.db.table('muc')
-		toJoin = mucTable.get({'autojoin': 'y'})
+		toJoin = []
+		for mucId in self.config.getRoomList():
+			toJoin.append({'muc': mucId, 'nick': self.config.get('nick', mucId), 'password': ''})
+
 		for mucToJoin in toJoin:
 			muc = self.join(mucToJoin['muc'], mucToJoin['nick'], password=mucToJoin['password'])
 			if muc is not None:
 				muc.data = mucToJoin
 
-	
+
 	def join(self, muc, nick, password=''):
 		return self.client.join(muc, nick, password=password)
 
@@ -76,7 +76,7 @@ class Pyrefly(Handler):
 
 	def registerHandler(self, handler):
 		self.handlers.append(handler)
-	
+
 	def unregisterHandler(self, handler):
 		self.handlers.remove(handler)
 
@@ -94,25 +94,22 @@ class Pyrefly(Handler):
 				self.pluginModules[name] = __import__(importName, globals(), locals(), [], 0)
 			except ImportError:
 				return (False, "No such module: %s" % importName)
-			
+
 		if not self.pluginModules[name]:
-			print "import failed!"
 			del self.pluginModules[name]
 			return (False, "Module not defined after import")
-		print "Imported: %s" % self.pluginModules[name]
 
 		try:
 			clazz = getattr(self.pluginModules[name], name)
 		except AttributeError:
 			return (False, "Module has no class defined")
 
-		print "Class: %s" % clazz
 		if not clazz:
 			return (False, "Class not defined after import")
 		self.plugins[name] = clazz()
 		self.plugins[name].onLoad(self)
 		return (True, source)
-		
+
 	def unloadPlugin(self, name):
 		if name not in self.plugins:
 			return (False, None, "not loaded")
@@ -134,7 +131,7 @@ class Pyrefly(Handler):
 		self.plugins[name].onUnload()
 		del self.plugins[name]
 		return (True, unloaded, None)
-	
+
 	def reloadPlugin(self, name):
 		if name not in self.plugins:
 			return (False, "Not loaded")
@@ -151,18 +148,7 @@ class Pyrefly(Handler):
 			if name in plugin.getDependencies():
 				plugin.setDependency(pluginName, self.plugins[name])
 		return (True, None)
-		
 
-##~ client.RegisterHandler('message', logHandler.messageHandler)
-#client.RegisterHandler('presence', logHandler.presenceHandler)
-#client.RegisterHandler('presence', xmppUtils.rosterHandler)
-#client.RegisterHandler('message', commandHandler.messageHandler)
-
-#client.RegisterHandler('message', replyHandler.messageHandler)
-#client.RegisterHandler('message', swearHandler.messageHandler)
-
-#client.RegisterHandler('message', fightHandler.messageHandler)
-#client.RegisterHandler('presence', pyrefight.presHandler)
 
 if __name__ == '__main__':
 	pyrefly = Pyrefly(config)

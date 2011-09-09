@@ -17,25 +17,26 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from plugin import Plugin
-import re
+from libCommand import Command, Help
 
-class Echo(Plugin):
-
+class Help(Plugin):
+	
 	def __init__(self):
 		Plugin.__init__(self)
-
+	
 	def onLoad(self, bot):
 		Plugin.onLoad(self, bot)
-
-	def onUnload(self):
-		Plugin.onUnload(self)
-
-	def onMucMessage(self, muc, client, message, jid=None):
-		if client is None:
+	
+	@Command('help', minArgs=1)
+	@Help("You can't possibly be THAT helpless.", usage='<command>')
+	def cmdHelp(self, muc, user, args, say, whisper):
+		command = self.bot.dispatcher.getCommand(args[0])
+		if command is None:
+			say("No such command: !%s" % args[0])
 			return
-
-		print message
-		print type(re.match('<\w*?>', message))
-		if re.match('<\w*?>', message)	!= None: return
-
-		muc.sendMessage("<%s> %s" % (client.getNick(), message))
+	
+		auth = ''
+		if not command.hasAccess(user):
+			auth = ' (not authorized)'
+		say(command.getHelp())
+		say("Usage: %s%s %s%s" % (command.getTriggerChar(), command.getTrigger(), command.getUsage(), auth))

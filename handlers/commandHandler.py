@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import commands
 import xmppUtils
+import config
 import dictionary
 from commands import *
 
@@ -31,7 +32,8 @@ def messageHandler(client, msg):
 	# TODO: ignore messages from self
 
 	data = msg.getBody()
-#	nick = msg.getFrom().getResource()
+	if config.get("nick") == msg.getFrom().getResource():
+		return 0
 
 #	if not nick:
 #		return
