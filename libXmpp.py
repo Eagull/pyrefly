@@ -18,10 +18,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from handler import Handler
 from xmpp.protocol import NS_MUC_USER, Iq, NS_MUC_ADMIN, JID
+from libChat import Client, Room, User
 import xmpp
 
 
-class Client(object):
+class XmppClient(Client):
 
 	def __init__(self, strJid):
 		self.jid = xmpp.JID(strJid)
