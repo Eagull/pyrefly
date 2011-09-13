@@ -21,8 +21,8 @@ import config
 
 from db import Db
 from core import Core
-from libXmpp import Client
-from handler import Handler
+from libXmpp import XmppClient
+from handler import Handler, EventBroadcaster
 from libCommand import Dispatcher
 
 import sys, os
@@ -30,15 +30,15 @@ import sys, os
 class Pyrefly(Handler):
 
 	def __init__(self, config):
-		self.config = config
-		self.client = Client(self.config.get('id'))
-		self.client.addHandler(self)
-		self.db = Db('pyrefly', self.config.get('account', 'db'), self.config.get('password', 'db'), self.config.get('spreadsheet', 'db'))
-		self.plugins = {}
-		self.pluginModules = {}
-		self.dispatcher = Dispatcher()
-
-		self.handlers = [Core(self), self.dispatcher]
+		self._config = config
+		self._client = XmppClient(self._config.get('id'))
+		self._db = Db('pyrefly', self._config.get('account', 'db'), self._config.get('password', 'db'), self._config.get('spreadsheet', 'db'))
+		self._plugins = {}
+		self._pluginModules = {}
+		self._dispatcher = Dispatcher()
+		self._broadcaster = EventBroadcaster()
+		self._broadcaster.addHandler(Core(self))
+		self._client.addHandler(self._broadcaster)
 		# Set up the import path for plugins
 		myPath = os.path.abspath(__file__)
 		pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")
@@ -46,16 +46,17 @@ class Pyrefly(Handler):
 		sys.path.append(pluginPath)
 
 	def connect(self):
-		self.db.connect()
-		result, err = self.client.connect(self.config.get('password'), 'bot' + self.config.hash[:6])
+		self._db.connect()
+		result, err = self._client.connect(self._config.get('password'), 'bot' + self._config.hash[:6])
 		if not result:
 			print "Error connecting: %s" % err
 			exit(1)
+		print "Connected!"
 
 	def initialize(self):
 		toJoin = []
-		for mucId in self.config.getRoomList():
-			toJoin.append({'muc': mucId, 'nick': self.config.get('nick', mucId), 'password': ''})
+		for mucId in self._config.getRoomList():
+			toJoin.append({'muc': mucId, 'nick': self._config.get('nick', mucId), 'password': ''})
 
 		for mucToJoin in toJoin:
 			muc = self.join(mucToJoin['muc'], mucToJoin['nick'], password=mucToJoin['password'])
@@ -64,59 +65,55 @@ class Pyrefly(Handler):
 
 
 	def join(self, muc, nick, password=''):
-		return self.client.join(muc, nick, password=password)
+		return self._client.join(muc, nick, password=password)
 
 	def process(self, timeout=0.1):
-		self.client.process(timeout=timeout)
+		self._client.process(timeout=timeout)
 		return True
 
-	def onMucMessage(self, *args, **kwargs):
-		for handler in self.handlers:
-			handler.onMucMessage(*args, **kwargs)
-
 	def registerHandler(self, handler):
-		self.handlers.append(handler)
+		self._broadcaster.addHandler(handler)
 
 	def unregisterHandler(self, handler):
-		self.handlers.remove(handler)
+		self._broadcaster.removeHandler(handler)
 
 	def loadPlugin(self, name):
-		if name in self.plugins:
+		if name in self._plugins:
 			return (False, "Plugin %s is already loaded" % name)
 		source = None
-		if name in self.pluginModules:
+		if name in self._pluginModules:
 			source = "reloaded"
-			reload(self.pluginModules[name])
+			reload(self._pluginModules[name])
 		else:
 			importName = name.lower()
 			source = "imported"
 			try:
-				self.pluginModules[name] = __import__(importName, globals(), locals(), [], 0)
+				self._pluginModules[name] = __import__(importName, globals(), locals(), [], 0)
 			except ImportError:
 				return (False, "No such module: %s" % importName)
 
-		if not self.pluginModules[name]:
-			del self.pluginModules[name]
+		if not self._pluginModules[name]:
+			del self._pluginModules[name]
 			return (False, "Module not defined after import")
 
 		try:
-			clazz = getattr(self.pluginModules[name], name)
+			clazz = getattr(self._pluginModules[name], name)
 		except AttributeError:
 			return (False, "Module has no class defined")
 
 		if not clazz:
 			return (False, "Class not defined after import")
-		self.plugins[name] = clazz()
-		self.plugins[name].onLoad(self)
+		self._plugins[name] = clazz()
+		self._plugins[name].onLoad(self)
 		return (True, source)
 
 	def unloadPlugin(self, name):
-		if name not in self.plugins:
+		if name not in self._plugins:
 			return (False, None, "not loaded")
 
 		toUnload = []
 		unloaded = []
-		for pluginName, plugin in self.plugins.items():
+		for pluginName, plugin in self._plugins.items():
 			if name in plugin.getDependencies():
 				toUnload.append(pluginName)
 
@@ -128,25 +125,25 @@ class Pyrefly(Handler):
 				return (False, unloaded, err)
 			unloaded.append(pluginName)
 
-		self.plugins[name].onUnload()
-		del self.plugins[name]
+		self._plugins[name].onUnload()
+		del self._plugins[name]
 		return (True, unloaded, None)
 
 	def reloadPlugin(self, name):
-		if name not in self.plugins:
+		if name not in self._plugins:
 			return (False, "Not loaded")
-		plugin = self.plugins[name]
+		plugin = self._plugins[name]
 		plugin.onUnload()
-		reload(self.pluginModules[name])
+		reload(self._pluginModules[name])
 		try:
-			clazz = getattr(self.pluginModules[name], name)
+			clazz = getattr(self._pluginModules[name], name)
 		except AttributeError:
 			return (False, "Class no longer defined")
-		self.plugins[name] = clazz()
-		self.plugins[name].onLoad(self)
-		for pluginName, plugin in self.plugins.items():
+		self._plugins[name] = clazz()
+		self._plugins[name].onLoad(self)
+		for pluginName, plugin in self._plugins.items():
 			if name in plugin.getDependencies():
-				plugin.setDependency(pluginName, self.plugins[name])
+				plugin.setDependency(pluginName, self._plugins[name])
 		return (True, None)
 
 

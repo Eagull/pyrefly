@@ -18,14 +18,43 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 class Handler(object):
 	
-	def onMucJoin(self, muc, user):
+	def onRoomJoin(self, room, user):
 		pass
 	
-	def onMucPart(self, muc, user):
+	def onRoomPart(self, room, user):
 		pass
 	
-	def onMucNickChange(self, muc, user, oldNick):
+	def onRoomNickChange(self, room, user, oldNick):
 		pass
 	
-	def onMucMessage(self, muc, user, message, jid=None):
+	def onRoomMessage(self, room, user, message, jid=None):
 		pass
+
+
+class EventBroadcaster(Handler):
+
+	def __init__(self):
+		Handler.__init__(self)
+		self._handlers = list()
+	
+	def addHandler(self, handler):
+		self._handlers.append(handler)
+	
+	def removeHandler(self, handler):
+		self._handlers.remove(handler)
+
+	def onRoomJoin(self, room, user):
+		for handler in self._handlers:
+			handler.onRoomJoin(room, user)
+
+	def onRoomPart(self, room, user):
+		for handler in self._handlers:
+			handler.onRoomPart(room, user)
+	
+	def onRoomNickChange(self, room, user, oldNick):
+		for handler in self._handlers:
+			handler.onRoomNickChange(room, user, oldNick)
+
+	def onRoomMessage(self, room, user, message, jid=None):
+		for handler in self._handlers:
+			handler.onRoomMessage(room, user, message, jid=jid)

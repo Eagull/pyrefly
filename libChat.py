@@ -16,16 +16,33 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-class Client(object):
+from handler import EventBroadcaster
+
+class Client(EventBroadcaster):
 
 	def __init__(self):
-		self._rooms = {}
-		pass
-	
+		EventBroadcaster.__init__(self)
+		self._rooms = dict()
+
 	def join(self, room):
 		self._rooms[room.getName()] = room
 	
+	def _addRoom(self, room):
+		name = room.getName().lower()
+		if name in self._rooms:
+			return self._rooms[room]
+		self._rooms[name] = room
+		return room
+	
+	def _removeRoom(self, room):
+		name = room.getName().lower()
+		if name not in self._rooms:
+			return False
+		del self._rooms[name]
+		return True
+
 	def getRoom(self, name):
+		name = name.lower()
 		if name not in self._rooms:
 			return None
 		return self._rooms[room]
@@ -76,6 +93,16 @@ class Room(object):
 
 
 class Member(object):
+
+	_role_handlers = list()
+
+	@classmethod
+	def addRoleHandler(cls, handler):
+		cls._role_handlers.append(handler)
+	
+	@classmethod
+	def removeRoleHandler(cls, handler):
+		cls._role_handlers.remove(handler)
 	
 	def __init__(self, room, nick):
 		self._room = room
@@ -86,3 +113,13 @@ class Member(object):
 
 	def getRoom(self):
 		return self._room
+	
+	def updateNick(self, nick):
+		self._nick = nick
+		self._room.nickChange
+	
+	def hasRole(self, room, role):
+		for handler in Member._role_handlers:
+			if handler(room, self, role):
+				return True
+		return False

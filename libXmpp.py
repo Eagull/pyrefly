@@ -18,59 +18,50 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from handler import Handler
 from xmpp.protocol import NS_MUC_USER, Iq, NS_MUC_ADMIN, JID
-from libChat import Client, Room, User
+from libChat import Client, Room, Member
 import xmpp
 
 
 class XmppClient(Client):
 
 	def __init__(self, strJid):
-		self.jid = xmpp.JID(strJid)
-		self.client = xmpp.Client(self.jid.getDomain(), debug=[])
-		self.mucs = {}
-		self.handlers = []
+		Client.__init__(self)
+		self._jid = xmpp.JID(strJid)
+		self._client = xmpp.Client(self._jid.getDomain(), debug=[])
+
+	def getClient(self):
+		return self._client
 
 	def connect(self, password, resource):
-		res = self.client.connect()
+		res = self._client.connect()
 		if not res:
 			return (False, "Error connecting to server: %s" % jid.getDomain())
 
-		res = self.client.auth(self.jid.getNode(), password, resource)
+		res = self._client.auth(self._jid.getNode(), password, resource)
 		if not res:
-			return (False, "Error authenticating as %s" % self.jid.getNode())
+			return (False, "Error authenticating as %s" % self._jid.getNode())
 
-		self.client.RegisterHandler('presence', self.onRoster)
-		self.client.RegisterHandler('message', self.onMessage)
+		self._client.RegisterHandler('presence', self.onRoster)
+		self._client.RegisterHandler('message', self.onMessage)
 
-		self.client.sendInitPresence()
+		self._client.sendInitPresence()
 
 		return (True, None)
 
 	def process(self, timeout=0.1):
-		self.client.Process(timeout)
+		self._client.Process(timeout)
 
 	def join(self, mucName, nick, password=''):
-		lMucName = mucName.lower()
-		if lMucName in self.mucs:
-			return self.mucs[lMucName]
+		print "Told to join: %s" % mucName
+		muc = self.getRoom(mucName)
+		if muc is not None:
+			return muc
 
-		muc = Muc(self, mucName, nick)
-		self.mucs[lMucName] = muc
+		muc = XmppMuc(self, mucName, nick)
 		muc.sendPresence(password)
+		self._addRoom(muc)
 
 		return muc
-
-	def emitMucJoin(self, muc, user):
-		for handler in self.handlers:
-			handler.onMucJoin(muc, user)
-
-	def emitMucPart(self, muc, user):
-		for handler in self.handlers:
-			handler.onMucPart(muc, user)
-
-	def emitMucNickChange(self, muc, user, oldNick):
-		for handler in self.handlers:
-			handler.onMucNickChange(muc, user, oldNick)
 
 	def onMessage(self, session, message):
 		sender = message.getFrom()
@@ -79,89 +70,71 @@ class XmppClient(Client):
 		nick = sender.getResource()
 		toprint = "libXmpp: <%s/%s> %s" % (mucName, nick, message.getBody())
 		print toprint.encode('utf-8')
-
-		if lMucName not in self.mucs:
+		
+		muc = self.getRoom(mucName)
+		if not muc:
 			return
-
-		muc = self.mucs[lMucName]
 
 		# Suppress messages send by this bot itself.
 		if nick == muc.getNick():
 			return
 
-		user = muc.getUser(nick)
+		user = muc.getMemberByNick(nick)
 
-		for handler in self.handlers:
-			handler.onMucMessage(muc, user, message.getBody(), jid=sender)
+		self.onMucMessage(muc, user, message.getBody(), jid=sender)
 
 	def onRoster(self, session, presence):
 		jid = presence.getFrom()
 		mucId = jid.getStripped()
 		lMucId = mucId.lower()
 
-		if not lMucId in self.mucs:
+		muc = self.getRoom(mucId)
+		if not muc:
 			return
 
-		self.mucs[lMucId].onRoster(presence)
-
-	def addHandler(self, handler):
-		self.handlers.append(handler)
-
-	def removeHandler(self, handler):
-		self.handlers.remove(handler)
+		muc.onRoster(presence)
 
 
-class Muc(object):
+class XmppMuc(Room):
 
 	def __init__(self, client, name, nick):
-		self.client = client
-		self.name = name
-		self.nick = nick
+		Room.__init__(client, name)
+		self._nick = nick
 
 		self.roomId = "%s/%s" % (name, nick)
-		self.jid = JID(self.roomId)
-		self.mucId = self.jid.getStripped()
-		self.roster = {}
-
-	def getId(self):
-		return self.mucId
-
-	def getUser(self, nick):
-		if nick not in self.roster:
-			return None
-		return self.roster[nick]
+		self._jid = JID(self.roomId)
 
 	def getNick(self):
-		return self.nick
+		return self._nick
 
 	def sendPresence(self, password):
-		presence = xmpp.Presence(to=self.roomId)
+		presence = xmpp.Presence(to=self.getMuc().getName())
 		x = presence.setTag('x', namespace=xmpp.NS_MUC)
 		x.setTagData('password', password)
 		x.addChild('history', {'maxchars': '0', 'maxstanzas': '0'});
-		self.client.client.send(presence)
+		self.getClient().getClient().send(presence)
 
 	def sendMessage(self, body):
-		message = xmpp.protocol.Message(to=self.mucId, body=body, typ='groupchat')
-		self.client.client.send(message)
+		message = xmpp.protocol.Message(to=self.getMuc().getName(), body=body, typ='groupchat')
+		self.getClient().getClient().send(message)
 
 	def setRole(self, user, role, reason=None):
 		iqMap = {'role': role}
 		if reason is not None:
 			iqMap['reason'] = reason
-		self.client.client.send(user.iq(iqMap))
+		self.getClient().getClient().send(user.iq(iqMap))
 
 	def setAffiliation(self, user, affiliation):
-		self.client.client.send(user.iq({'affiliation': affiliation}))
+		self.getClient().getClient().send(user.iq({'affiliation': affiliation}))
 
 	def onRoster(self, presence):
 		nick = presence.getFrom().getResource()
 
 		if presence.getType() == 'unavailable':
-			if nick not in self.roster:
-				return
 
-			user = self.roster[nick]
+			user = self.getMemberByNick(nick)
+			if user is None:
+				return
 
 			# This unpleasantness checks for and handles nickname changes:
 			x = presence.getTag(presence, {}, NS_MUC_USER)
@@ -175,67 +148,67 @@ class Muc(object):
 				if newNick == nick:
 					return
 
-				# nick -> newNick
+				# nick -> newNick. This is hacky.
+				self.removeMember(user)
 				user.updateNick(newNick)
-				del self.roster[nick]
-				self.roster[newNick] = user
-				if nick == self.nick:
-					self.nick = nick
-				self.client.emitMucNickChange(self, user, nick)
+				self.addMember(user)
+				if nick == self._nick:
+					self._nick = nick
+				self.getClient().onMucNickChange(self, user, nick)
 			else:
-				# Seems like this user was deleted.
-				self.client.emitMucPart(self, self.roster[nick])
-				del self.roster[nick]
+				user = self.getMemberByNick(nick)
+				if user is not None:
+					self.getClient().onMucPart(self, user)
+				self.removeMember(nick)
 		else:
-			if nick in self.roster:
-				user = self.roster[nick]
-				user.updateFromPresence(nick, presence)
+			user = self.getMemberByNick(nick)
+			if user is None:
+				user = self.userFromPresence(nick, presence)
+				self.addMember(user)
+				self.getClient().onMucJoin(self, user)
 			else:
-				self.roster[nick] = self.userFromPresence(nick, presence)
-				self.client.emitMucJoin(self, self.roster[nick])
-			pass
+				user.updateFromPresence(nick, presence)
 
 	def userFromPresence(self, nick, presence):
-		return User(self, nick).updateFromPresence(nick, presence)
+		return XmppMucMember(self, nick).updateFromPresence(nick, presence)
 
 
-class User(object):
+class XmppMucMember(Member):
 
-	def __init__(self, muc, nick):
-		self.muc = muc
-		self.nick = nick
+	def __init__(self, room, nick):
+		Member.__init__(self, room, nick)
 
-		self.affiliation = ''
-		self.status = 'online'
-		self.role = ''
-		self.jid = ''
+		self._affiliation = ''
+		self._status = 'online'
+		self._role = ''
+		self._jid = ''
 
 	def sendMessage(self, body):
-		message = xmpp.protocol.Message(to=self.jid, body=body)
-		self.muc.client.client.send(message)
+		message = xmpp.protocol.Message(to=self._jid, body=body)
+		self.getRoom().getClient().getClient().send(message)
 	
 	def getNick(self):
-		return self.nick
+		return self._nick
 
 	def getAffiliation(self):
-		return self.affiliation
+		return self._affiliation
 
 	def getStatus(self):
-		return self.status
+		return self._status
 
 	def getRole(self):
-		return self.role
+		return self._role
 
 	def getJid(self):
-		return self.jid
+		return self._jid
 
 	def setNick(self, nick):
-		self.nick = nick
+		self._nick = nick
 
 	def updateFromPresence(self, nick, presence):
-		status = self.statusFromPresence(presence)
+		status = self._statusFromPresence(presence)
 		if status:
-			self.status = status
+			self._status = status
 
   		x = presence.getTag('x', {}, NS_MUC_USER)
   		if not x:
@@ -245,9 +218,9 @@ class User(object):
   		if not item:
   			return self
 
-  		self.affiliation = item.getAttr('affiliation')
-  		self.role = item.getAttr('role')
-  		self.jid = item.getAttr('jid')
+  		self._affiliation = item.getAttr('affiliation')
+  		self._role = item.getAttr('role')
+  		self._jid = item.getAttr('jid')
 
 		return self
 
@@ -264,22 +237,22 @@ class User(object):
 		return statusMsg
 
 	def setRole(self, role):
-		self.muc.setRole(self, role, reason=reason)
+		self.getRoom().setRole(self, role, reason=reason)
 
 	def setAffiliation(self, affiliation):
-		self.muc.setAffiliation(self, affiliation)
+		self.getRoom().setAffiliation(self, affiliation)
 
 	def isMember(self):
-		return self.affiliation in ['member', 'admin', 'owner']
+		return self._affiliation in ['member', 'admin', 'owner']
 
 	def isModerator(self):
-		return self.role == 'moderator'
+		return self._role == 'moderator'
 
 	def isAdmin(self):
-		return self.affiliation in ['admin', 'owner']
+		return self._affiliation in ['admin', 'owner']
 
 	def isOwner(self):
-		return self.affiliation == 'owner'
+		return self._affiliation == 'owner'
 
 	def kick(self, reason):
 		self.setRole('none', reason=reason)
@@ -291,9 +264,9 @@ class User(object):
 		self.setRole('visitor', reason=reason)
 
 	def iq(self, attributes):
-		iq = xmpp.protocol.Iq('set', NS_MUC_ADMIN, {}, self.mucId)
+		iq = xmpp.protocol.Iq('set', NS_MUC_ADMIN, {}, self.getMuc().getName())
 		item = iq.getTag('query').setTag('item')
-		item.setAttr('nick', self.nick)
+		item.setAttr('nick', self._nick)
 		for k, v in attributes.items():
 			item.setAttr(k, v)
 		return iq
