@@ -156,7 +156,11 @@ class Db(object):
 		for k, v in vMap.items():
 			if isinstance(v, unicode):
 				v = v.encode('utf-8')
-			if v[0:1] in [' ', '$', '@', '=', '<', '>']:
+			if isinstance(v, int):
+				v = str(v)
+			if v is None:
+				v = ''
+			elif v[0:1] in [' ', '$', '@', '=', '<', '>']:
 				v = "@%s" % v
 			cleanMap[k] = v
 		return cleanMap
@@ -168,6 +172,8 @@ class Db(object):
 			if v is not None:
 				if v[0:1] == '@':
 					v = v[1:]
+			else:
+				v = ''
 			uncleanMap[k] = v
 		return uncleanMap
 		
