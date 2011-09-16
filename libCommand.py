@@ -44,7 +44,7 @@ class Dispatcher(Handler):
 			return
 		del self.commands[trigger]
 	
-	def onMucMessage(self, muc, client, message, jid=None):
+	def onRoomMessage(self, room, client, message, jid=None):
 		# Only respond for messages which begin with command invocation.
 		if message[0:1] not in self.initChars:
 			return False
@@ -55,7 +55,7 @@ class Dispatcher(Handler):
 		  return
 		cmd = self.commands[cmdStr]
 
-		cmd(muc, client, message, jid=jid)
+		cmd(room, client, message, jid=jid)
 		return True
 	
 	def registerCommandHandler(self, func):
@@ -113,14 +113,14 @@ class CommandHandle(object):
 	def getTriggerChar(self):
 		return self.dispatcher.getTriggerChar()
 		
-	def showHelp(self, muc):
+	def showHelp(self, room):
 		if self.helpStr is not None:
-			muc.sendMessage(self.helpStr)
-		self.showUsage(muc)
+			room.sendMessage(self.helpStr)
+		self.showUsage(room)
 	
-	def showUsage(self, muc):
+	def showUsage(self, room):
 		if self.usage != '':
-			muc.sendMessage('Usage: %s%s %s' % (self.dispatcher.initChars[0], self.trigger, self.usage))
+			room.sendMessage('Usage: %s%s %s' % (self.dispatcher.initChars[0], self.trigger, self.usage))
 	
 	def hasAccess(self, user):
 		if self.access is None:
@@ -135,20 +135,20 @@ class CommandHandle(object):
 		else:
 			return message.split(" ")[1:]
 
-	def __call__(self, muc, user, message, jid=None):
+	def __call__(self, room, user, message, jid=None):
 		if not self.hasAccess(user):
 			return False
 			
 		args = self.parseArgs(message.strip())
 		
-		say = lambda reply: muc.sendMessage(reply)
+		say = lambda reply: room.sendMessage(reply)
 		whisper = lambda reply: user.sendMessage(reply)
 		
 		if len(args) < self.minArgs:
 			self.showUsage(user)
 			return
 		
-		self.handler(muc, user, args, say, whisper)
+		self.handler(room, user, args, say, whisper)
 		
 
 class Command(object):

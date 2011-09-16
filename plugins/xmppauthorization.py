@@ -16,10 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from plugin import Plugin
+from plugin import Plugin, Authorizer
+from libCommand import Command, Help
 import re
 
-class Auth(Plugin):
+class XmppAuthorization(Plugin):
 
 	def __init__(self):
 		Plugin.__init__(self)
@@ -30,4 +31,23 @@ class Auth(Plugin):
 	def onUnload(self):
 		Plugin.onUnload(self)
 
+	@Authorizer('xmpp')
+	def authorize(self, room, user, role):
+		if role == 'member':
+			return user.isMember()
+		elif role == 'admin':
+			return user.isAdmin()
+		elif role == 'moderator':
+			return user.isModerator()
+		elif role == 'owner':
+			return user.isOwner()
+		return False
 	
+	@Command('xmpp-auth-check', minArgs=1, maxArgs=1)
+	@Help('Check your XMPP auth status', usage='<role>')
+	def cmdAuthCheck(self, room, user, args, say, whisper):
+		role = args[0]
+		if user.isInRole(room, 'xmpp', role):
+			say("You are authorized for role: xmpp:%s" % role)
+		else:
+			say("You are not authorized for role: xmpp:%s" % role)

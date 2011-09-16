@@ -23,8 +23,11 @@ class Core(Handler):
 	def __init__(self, bot):
 		Handler.__init__(self)
 		self.bot = bot
+	
+	def onRoomJoin(self, room, user):
+		print "%s joined %s" % (user.getNick(), room.getName())
 
-	def onMucMessage(self, muc, client, message, jid=None):
+	def onRoomMessage(self, muc, client, message, jid=None):
 		if client is None:
 			return
 
@@ -32,7 +35,7 @@ class Core(Handler):
 			return
 
 		#~ uncomment if debugging
-		#~ toprint = "Core.onMucMessage: %s/%s - %s" % (muc.getId(), client.getNick(), message)
+		#~ toprint = "Core.onRoomMessage: %s/%s - %s" % (muc.getId(), client.getNick(), message)
 		#~ print toprint.encode('utf-8')
 		if not message[0] == '!':
 			return

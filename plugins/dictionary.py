@@ -151,7 +151,7 @@ class Dictionary(Plugin):
 
 		# replace with whisper once it's written
 
-	def onMucMessage(self, muc, client, message, jid=None):
+	def onRoomMessage(self, muc, client, message, jid=None):
 		if message[0:1] != '?':
 			return
 		term = message.split(" ", 1)[0][1:].lower()

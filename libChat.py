@@ -27,6 +27,9 @@ class Client(EventBroadcaster):
 	def join(self, room):
 		self._rooms[room.getName()] = room
 	
+	def getRooms(self):
+		return self._rooms.values()
+	
 	def _addRoom(self, room):
 		name = room.getName().lower()
 		if name in self._rooms:
@@ -45,7 +48,7 @@ class Client(EventBroadcaster):
 		name = name.lower()
 		if name not in self._rooms:
 			return None
-		return self._rooms[room]
+		return self._rooms[name]
 
 
 class Room(object):
@@ -90,6 +93,9 @@ class Room(object):
 			return False
 		del self._roster[nick]
 		return True
+	
+	def getMembers(self):
+		return self._roster.values()
 
 
 class Member(object):
@@ -110,16 +116,25 @@ class Member(object):
 	
 	def getNick(self):
 		return self._nick
+	
+	def getId(self):
+		return None
+	
+	def getIdentity(self):
+		if self._identity is None:
+			return self.getId()
+		return self._identity
 
 	def getRoom(self):
 		return self._room
+
+	def isInRole(self, room, category, roleName):
+		for handler in Member._role_handlers:
+			if handler(room, self, category, roleName):
+				return True
+		return False
 	
 	def updateNick(self, nick):
 		self._nick = nick
 		self._room.nickChange
 	
-	def hasRole(self, room, role):
-		for handler in Member._role_handlers:
-			if handler(room, self, role):
-				return True
-		return False

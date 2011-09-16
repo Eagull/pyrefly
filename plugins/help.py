@@ -30,7 +30,7 @@ class Help(Plugin):
 	@Command('help', minArgs=1)
 	@Help("You can't possibly be THAT helpless.", usage='<command>')
 	def cmdHelp(self, muc, user, args, say, whisper):
-		command = self.bot.dispatcher.getCommand(args[0])
+		command = self.bot.getDispatcher().getCommand(args[0])
 		if command is None:
 			say("No such command: !%s" % args[0])
 			return

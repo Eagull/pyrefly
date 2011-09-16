@@ -17,7 +17,24 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from handler import Handler
+from libChat import Member
 import types
+
+
+class Authorizer(object):
+
+	def __init__(self, category):
+		self._category = category
+	
+	def __call__(self, fn):
+		cat = self._category
+		def replace(caller, room, user, category, role):
+			if category != cat:
+				return False
+			return fn(caller, room, user, role)
+		replace._authorizer = True
+		return replace
+
 
 class Plugin(Handler):
 	
@@ -34,19 +51,24 @@ class Plugin(Handler):
 	def onLoad(self, bot):
 		self.bot = bot
 		self.bot.registerHandler(self)
-		self._registerCommands()
+		self._registerInternals()
 
 	def onUnload(self):
 		self.bot.unregisterHandler(self)
-		self._unregisterCommands()
+		self._unregisterInternals()
 
-	def _registerCommands(self):
+	def _registerInternals(self):
 		for key in dir(self):
 			func = getattr(self, key)
 			if hasattr(func, '_command') and 'trigger' in func._command:
-				self.bot.dispatcher.registerCommandHandler(func)
-	def _unregisterCommands(self):
+				self.bot.getDispatcher().registerCommandHandler(func)
+			elif hasattr(func, '_authorizer'):
+				Member.addRoleHandler(func)
+	
+	def _unregisterInternals(self):
 		for key in dir(self):
 			func = getattr(self, key)
 			if hasattr(func, '_command') and 'trigger' in func._command:
-				self.bot.dispatcher.unregisterCommandHandler(func)
+				self.bot.getDispatcher().unregisterCommandHandler(func)
+			elif hasattr(func, '_authorizer'):
+				Member.removeRoleHandler(func)

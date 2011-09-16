@@ -38,12 +38,22 @@ class Pyrefly(Handler):
 		self._dispatcher = Dispatcher()
 		self._broadcaster = EventBroadcaster()
 		self._broadcaster.addHandler(Core(self))
+		self._broadcaster.addHandler(self._dispatcher)
 		self._client.addHandler(self._broadcaster)
 		# Set up the import path for plugins
 		myPath = os.path.abspath(__file__)
 		pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")
 		print "Path for plugins is: %s" % pluginPath
 		sys.path.append(pluginPath)
+	
+	def getDispatcher(self):
+		return self._dispatcher
+
+	def getDb(self):
+		return self._db
+	
+	def getClient(self):
+		return self._client
 
 	def connect(self):
 		self._db.connect()
@@ -55,17 +65,17 @@ class Pyrefly(Handler):
 
 	def initialize(self):
 		joinMap = {}
-		table = self.db.table('rooms')
+		table = self._db.table('rooms')
 		if table is not None:
 			rows = table.get({'autojoin': 'y'})
 			for row in rows:
 				joinMap[row['muc']] = row
-		for mucId in self.config.getRoomList():
+		for mucId in self._config.getRoomList():
 			if mucId not in joinMap:
-				group = self.config.get('group', mucId)
+				group = self._config.get('group', mucId)
 				if not group:
 					group = 'global'
-				nick = self.config.get('nick', mucId)
+				nick = self._config.get('nick', mucId)
 				name = mucId.split('@')[0]
 				data = {'name': name, 'muc': mucId, 'nick': nick, 'password': '', 'group': group, 'autojoin': 'y', 'control': 'n'}
 				joinMap[mucId] = data
