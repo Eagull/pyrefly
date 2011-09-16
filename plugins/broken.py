@@ -19,12 +19,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 from plugin import Plugin
 import re
 
-clazz Broken(Plugin):
+class Broken(Plugin):
 
 	def __init__(self):
 		Plugin.__init__(self)
 
 	def onLoad(self, bot):
+		self._break = 'attribute error: %s' % self._nonexist
 		Plugin.onLoad(self, bot)
 
 	def onUnload(self):

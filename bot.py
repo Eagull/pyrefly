@@ -139,8 +139,13 @@ class Pyrefly(Handler):
 
 		if not clazz:
 			return (False, "Class not defined after import")
-		self._plugins[name] = clazz()
-		self._plugins[name].onLoad(self)
+		try:
+			self._plugins[name] = clazz()
+			self._plugins[name].onLoad(self)
+		except Exception as err:
+			if name in self._plugins:
+				del self._plugins[name]
+			return (False, str(err).strip())
 		return (True, source)
 
 	def unloadPlugin(self, name):
@@ -180,8 +185,13 @@ class Pyrefly(Handler):
 			clazz = getattr(self._pluginModules[name], name)
 		except AttributeError:
 			return (False, "Class no longer defined")
-		self._plugins[name] = clazz()
-		self._plugins[name].onLoad(self)
+		try:
+			self._plugins[name] = clazz()
+			self._plugins[name].onLoad(self)
+		except Exception as err:
+			if name in self._plugins:
+				del self._plugins[name]
+			return (False, str(err).strip())
 		for pluginName, plugin in self._plugins.items():
 			if name in plugin.getDependencies():
 				plugin.setDependency(pluginName, self._plugins[name])
