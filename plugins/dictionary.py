@@ -27,7 +27,7 @@ class Dictionary(Plugin):
 		
 	def onLoad(self, bot):
 		Plugin.onLoad(self, bot)
-		self._dict = self.bot.getDb().table('dictionary')
+		self._dict = self._bot.getDb().table('dictionary')
 	
 	@Command('learn', minArgs=2, maxArgs=2)
 	@Access('xmpp', 'member')

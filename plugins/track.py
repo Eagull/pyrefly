@@ -39,7 +39,7 @@ class Track(Plugin):
 		self._trackUser(room, user)
 
 	def _loadUsers(self):
-		for room in self.bot.getClient().getRooms():
+		for room in self._bot.getClient().getRooms():
 			for user in room.getMembers():
 				self._trackUser(room, user)
 

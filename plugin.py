@@ -40,7 +40,8 @@ class Plugin(Handler):
 	
 	def __init__(self):
 		Handler.__init__(self)
-		self.bot = None
+		self._bot = None
+		self._name = self.__class__.__name__
 
 	def getDependencies(self):
 		return tuple()
@@ -49,19 +50,26 @@ class Plugin(Handler):
 		pass
 
 	def onLoad(self, bot):
-		self.bot = bot
-		self.bot.registerHandler(self)
+		self._bot = bot
+		self._bot.registerHandler(self)
 		self._registerInternals()
 
 	def onUnload(self):
-		self.bot.unregisterHandler(self)
+		self._bot.unregisterHandler(self)
 		self._unregisterInternals()
+
+	def onError(self, handler, err, room=None):
+		message = "Error in handler %s of plugin %s: %s" % (handler, self._name, str(err).strip())
+		print message.encode('utf-8')
+		if room is not None:
+			room.sendMessage(message)
+		return True
 
 	def _registerInternals(self):
 		for key in dir(self):
 			func = getattr(self, key)
 			if hasattr(func, '_command') and 'trigger' in func._command:
-				self.bot.getDispatcher().registerCommandHandler(func)
+				self._bot.getDispatcher().registerCommandHandler(func, plugin=self._name)
 			elif hasattr(func, '_authorizer'):
 				Member.addRoleHandler(func)
 	
@@ -69,6 +77,6 @@ class Plugin(Handler):
 		for key in dir(self):
 			func = getattr(self, key)
 			if hasattr(func, '_command') and 'trigger' in func._command:
-				self.bot.getDispatcher().unregisterCommandHandler(func)
+				self._bot.getDispatcher().unregisterCommandHandler(func)
 			elif hasattr(func, '_authorizer'):
 				Member.removeRoleHandler(func)

@@ -26,7 +26,7 @@ class Room(Plugin):
 	
 	def onLoad(self, bot):
 		Plugin.onLoad(self, bot)
-		self._rooms = self.bot.db.table('rooms')
+		self._rooms = self._bot.db.table('rooms')
 	
 	@Command('room-group')
 	@Help('Get or set the group of this room', usage='[<group>]')

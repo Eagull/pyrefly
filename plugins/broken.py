@@ -19,15 +19,24 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 from plugin import Plugin
 import re
 
+from libCommand import Command, Help
+
 class Broken(Plugin):
 
 	def __init__(self):
 		Plugin.__init__(self)
 
 	def onLoad(self, bot):
-		self._break = 'attribute error: %s' % self._nonexist
 		Plugin.onLoad(self, bot)
 
 	def onUnload(self):
 		Plugin.onUnload(self)
 
+	@Command('crash', maxArgs=0)
+	@Help('Attempt to crash the bot with an AttributeError in the command handler.')
+	def cmdCrash(self, room, user, args, say, whisper):
+		say("Brace yourselves!")
+		say(self._nonexist)
+	
+	def onRoomMessage(self, room, user, message, jid=None):
+		self._break = self._nonexist

@@ -58,9 +58,9 @@ class Dispatcher(Handler):
 		cmd(room, client, message, jid=jid)
 		return True
 	
-	def registerCommandHandler(self, func):
+	def registerCommandHandler(self, func, plugin=None):
 		commandInfo = func._command
-		command = CommandHandle(self, func, commandInfo)
+		command = CommandHandle(self, func, commandInfo, plugin=plugin)
 		trigger = command.getTrigger()
 		if trigger in self.commands:
 			return False
@@ -79,11 +79,12 @@ class Dispatcher(Handler):
 
 class CommandHandle(object):
 	
-	def __init__(self, dispatcher, handler, params):
+	def __init__(self, dispatcher, handler, params, plugin=None):
 		self.dispatcher = dispatcher
 		self.handler = handler
 		self.trigger = params['trigger']
 		self.minArgs = params['minArgs']
+		self.plugin = plugin
 		
 		self.maxArgs = None
 		if 'maxArgs' in params:
@@ -147,8 +148,13 @@ class CommandHandle(object):
 			self.showUsage(user)
 			return
 		
-		self.handler(room, user, args, say, whisper)
-		
+		try:
+			self.handler(room, user, args, say, whisper)
+		except Exception as err:
+			attrib = ''
+			if self.plugin is not None:
+				attrib = " from plugin %s" % self.plugin
+			say("Error running !%s%s: %s" % (self.trigger, attrib, str(err).strip()))
 
 class Command(object):
 	

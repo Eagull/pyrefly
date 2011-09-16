@@ -29,6 +29,9 @@ class Handler(object):
 	
 	def onRoomMessage(self, room, user, message, jid=None):
 		pass
+	
+	def onError(self, handler, err, room=None):
+		return False
 
 
 class EventBroadcaster(Handler):
@@ -45,16 +48,32 @@ class EventBroadcaster(Handler):
 
 	def onRoomJoin(self, room, user):
 		for handler in self._handlers:
-			handler.onRoomJoin(room, user)
+			try:
+				handler.onRoomJoin(room, user)
+			except Exception as err:
+				if not handler.onError('onRoomJoin', err, room=room):
+					raise
 
 	def onRoomPart(self, room, user):
 		for handler in self._handlers:
-			handler.onRoomPart(room, user)
+			try:
+				handler.onRoomPart(room, user)
+			except Exception as err:
+				if not handler.onError('onRoomPart', err, room=room):
+					raise
 	
 	def onRoomNickChange(self, room, user, oldNick):
 		for handler in self._handlers:
-			handler.onRoomNickChange(room, user, oldNick)
+			try:
+				handler.onRoomNickChange(room, user, oldNick)
+			except Exception as err:
+				if not handler.onError('onRoomNickChange', err, room=room):
+					raise
 
 	def onRoomMessage(self, room, user, message, jid=None):
 		for handler in self._handlers:
-			handler.onRoomMessage(room, user, message, jid=jid)
+			try:
+				handler.onRoomMessage(room, user, message, jid=jid)
+			except Exception as err:
+				if not handler.onError('onRoomMessage', err, room=room):
+					raise
