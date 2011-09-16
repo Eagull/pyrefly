@@ -78,7 +78,7 @@ class XmppClient(Client):
 		if nick == muc.getNick():
 			return
 
-		user = muc.getMemberByNick(nick)
+		user = muc.getMember(nick)
 
 		if message.getBody() is None:
 			return
@@ -134,7 +134,7 @@ class XmppMuc(Room):
 
 		if presence.getType() == 'unavailable':
 
-			user = self.getMemberByNick(nick)
+			user = self.getMember(nick)
 			if user is None:
 				return
 
@@ -158,12 +158,12 @@ class XmppMuc(Room):
 					self._nick = nick
 				self.getClient().onRoomNickChange(self, user, nick)
 			else:
-				user = self.getMemberByNick(nick)
+				user = self.getMember(nick)
 				if user is not None:
 					self.getClient().onRoomPart(self, user)
 				self.removeMember(nick)
 		else:
-			user = self.getMemberByNick(nick)
+			user = self.getMember(nick)
 			if user is None:
 				user = self.userFromPresence(nick, presence)
 				self.addMember(user)
@@ -247,7 +247,7 @@ class XmppMucMember(Member):
 
 		return statusMsg
 
-	def setRole(self, role):
+	def setRole(self, role, reason=None):
 		self.getRoom().setRole(self, role, reason=reason)
 
 	def setAffiliation(self, affiliation):

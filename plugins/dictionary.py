@@ -27,9 +27,10 @@ class Dictionary(Plugin):
 		
 	def onLoad(self, bot):
 		Plugin.onLoad(self, bot)
-		self._dict = self.bot.db.table('dictionary')
+		self._dict = self.bot.getDb().table('dictionary')
 	
 	@Command('learn', minArgs=2, maxArgs=2)
+	@Access('xmpp', 'member')
 	@Help('Learn a new dictionary definition', usage='<term> <definition>')
 	def cmdLearn(self, muc, client, args, say, whisper):
 		term, defin = (args[0], args[1])
@@ -51,6 +52,7 @@ class Dictionary(Plugin):
 		say("Defined %s" % term)
 
 	@Command('learn-global', minArgs=2, maxArgs=2)
+	@Access('xmpp', 'member')
 	@Help('Learn a new global dictionary definition', usage='<term> <definition>')
 	def cmdLearnGlobal(self, muc, client, args, say, whisper):
 		term, defin = (args[0], args[1])
@@ -69,6 +71,7 @@ class Dictionary(Plugin):
 		say("Defined %s globally" % term)
 
 	@Command('learn-private', minArgs=2, maxArgs=2)
+	@Access('xmpp', 'member')
 	@Help('Learn a new private dictionary definition', usage='<term> <definition>')
 	def cmdLearnPrivate(self, muc, client, args, say, whisper):
 		term, defin = (args[0], args[1])
@@ -87,6 +90,7 @@ class Dictionary(Plugin):
 		say("Defined %s" % term)
 	
 	@Command('forget', minArgs=1)
+	@Access('xmpp', 'member')
 	@Help('Forget a dictionary definition', usage='<term>')
 	def cmdForget(self, muc, client, args, say, whisper):
 		term = args[0].lower()
@@ -107,6 +111,7 @@ class Dictionary(Plugin):
 		say("Forgot definition for %s" % term)
 	
 	@Command('forget-global', minArgs=1)
+	@Access('xmpp', 'member')
 	@Help('Forget a global dictionary definition', usage='<term>')
 	def cmdForgetGlobal(self, muc, client, args, say, whisper):
 		term = args[0].lower()
@@ -121,6 +126,7 @@ class Dictionary(Plugin):
 		say("Forgot global definition for %s" % term)
 	
 	@Command('forget-private', minArgs=1)
+	@Access('xmpp', 'member')
 	@Help('Forget a private dictionary definition', usage='<term>')
 	def cmdForgetPrivate(self, muc, client, args, say, whisper):
 		term = args[0].lower()
@@ -135,6 +141,7 @@ class Dictionary(Plugin):
 		say("Forgot private definition for %s" % term)
 	
 	@Command('definfo', minArgs=1)
+	@Access('xmpp', 'moderator')
 	@Help('Query information about a definition', usage='<term>')
 	def cmdDefInfo(self, muc, client, args, say, whisper):
 		term = (args[0])

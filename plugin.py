@@ -28,10 +28,10 @@ class Authorizer(object):
 	
 	def __call__(self, fn):
 		cat = self._category
-		def replace(caller, room, user, category, role):
+		def replace(caller, user, category, role):
 			if category != cat:
 				return False
-			return fn(caller, room, user, role)
+			return fn(caller, user, role)
 		replace._authorizer = True
 		return replace
 

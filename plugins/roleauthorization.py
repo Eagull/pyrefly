@@ -80,8 +80,9 @@ class RoleAuthorization(Plugin):
 		return identity in self._roles[role]['rooms'][room]
 
 	@Authorizer('role')
-	def authorize(self, room, user, role):
+	def authorize(self, user, role):
 		identity = user.getIdentity()
+		room = user.getRoom()
 		if not identity:
 			print "No identity"
 			return False
@@ -97,7 +98,7 @@ class RoleAuthorization(Plugin):
 	@Help('Check your role-based auth status', usage='<role>')
 	def cmdAuthCheck(self, room, user, args, say, whisper):
 		role = args[0]
-		if user.isInRole(room, 'role', role):
+		if user.isInRole('role', role):
 			say("You are authorized for role: xmpp:%s" % role)
 		else:
 			say("You are not authorized for role: xmpp:%s" % role)

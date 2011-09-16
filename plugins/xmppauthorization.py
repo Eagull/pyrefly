@@ -32,7 +32,7 @@ class XmppAuthorization(Plugin):
 		Plugin.onUnload(self)
 
 	@Authorizer('xmpp')
-	def authorize(self, room, user, role):
+	def authorize(self, user, role):
 		if role == 'member':
 			return user.isMember()
 		elif role == 'admin':
@@ -47,7 +47,7 @@ class XmppAuthorization(Plugin):
 	@Help('Check your XMPP auth status', usage='<role>')
 	def cmdAuthCheck(self, room, user, args, say, whisper):
 		role = args[0]
-		if user.isInRole(room, 'xmpp', role):
+		if user.isInRole('xmpp', role):
 			say("You are authorized for role: xmpp:%s" % role)
 		else:
 			say("You are not authorized for role: xmpp:%s" % role)

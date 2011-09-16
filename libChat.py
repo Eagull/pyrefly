@@ -71,7 +71,7 @@ class Room(object):
 	def getType(self):
 		return None
 	
-	def getMemberByNick(self, nick):
+	def getMember(self, nick):
 		nick = nick.lower()
 		if nick not in self._roster:
 			return None
@@ -128,9 +128,9 @@ class Member(object):
 	def getRoom(self):
 		return self._room
 
-	def isInRole(self, room, category, roleName):
+	def isInRole(self, category, roleName):
 		for handler in Member._role_handlers:
-			if handler(room, self, category, roleName):
+			if handler(self, category, roleName):
 				return True
 		return False
 	

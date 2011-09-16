@@ -125,9 +125,8 @@ class CommandHandle(object):
 	def hasAccess(self, user):
 		if self.access is None:
 			return True
-		elif self.access == 'member':
-			return user.isMember()
-		return False
+		category, role = self.access
+		return user.isInRole(category, role)
 	
 	def parseArgs(self, message):
 		if self.maxArgs is not None:
@@ -185,12 +184,13 @@ class Help(object):
 
 class Access(object):
 	
-	def __init__(self, access):
-		self.access = access
+	def __init__(self, category, role):
+		self._category = category
+		self._role = role
 	
 	def __call__(self, func):
 		if not hasattr(func, '_command'):
 			func._command = {}
 		
-		func._command['access'] = self.access
+		func._command['access'] = (self._category, self._role)
 		return func
