@@ -24,6 +24,7 @@ from core import Core
 from libXmpp import XmppClient
 from handler import Handler, EventBroadcaster
 from libCommand import Dispatcher
+import py_compile
 
 import sys, os
 
@@ -42,9 +43,9 @@ class Pyrefly(Handler):
 		self._client.addHandler(self._broadcaster)
 		# Set up the import path for plugins
 		myPath = os.path.abspath(__file__)
-		pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")
-		print "Path for plugins is: %s" % pluginPath
-		sys.path.append(pluginPath)
+		self._pluginPath = os.path.join(myPath.rsplit(os.sep, 1)[0], "plugins")
+		print "Path for plugins is: %s" % self._pluginPath
+		sys.path.append(self._pluginPath)
 	
 	def getDispatcher(self):
 		return self._dispatcher
@@ -99,11 +100,23 @@ class Pyrefly(Handler):
 
 	def unregisterHandler(self, handler):
 		self._broadcaster.removeHandler(handler)
+	
+	def _tryCompile(self, pluginName):
+		pluginPath = "%s/%s.py" % (self._pluginPath, pluginName)
+		print "Compiling: %s" % pluginPath
+		try:
+			res = py_compile.compile(pluginPath, "%sc" % pluginPath, pluginPath, True)
+			return None
+		except py_compile.PyCompileError as err:
+			return str(err.msg).strip()
 
 	def loadPlugin(self, name):
 		if name in self._plugins:
 			return (False, "Plugin %s is already loaded" % name)
 		source = None
+		res = self._tryCompile(name.lower())
+		if res is not None:
+			return (False, res)
 		if name in self._pluginModules:
 			source = "reloaded"
 			reload(self._pluginModules[name])
@@ -155,7 +168,12 @@ class Pyrefly(Handler):
 	def reloadPlugin(self, name):
 		if name not in self._plugins:
 			return (False, "Not loaded")
+
+		res = self._tryCompile(name.lower())
+		if res is not None:
+			return (False, res)
 		plugin = self._plugins[name]
+
 		plugin.onUnload()
 		reload(self._pluginModules[name])
 		try:
