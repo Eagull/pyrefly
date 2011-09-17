@@ -35,7 +35,7 @@ class XmppClient(Client):
 	def connect(self, password, resource):
 		res = self._client.connect()
 		if not res:
-			return (False, "Error connecting to server: %s" % jid.getDomain())
+			return (False, "Error connecting to server: %s" % self._jid.getDomain())
 
 		res = self._client.auth(self._jid.getNode(), password, resource)
 		if not res:
